@@ -1,5 +1,5 @@
 // 처음 열 때 앱 파일을 저장해 두고, 다음부터는 인터넷 없이도 열리게 한다
-const CACHE = 'roulette-v2';
+const CACHE = 'roulette-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

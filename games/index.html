@@ -59,6 +59,9 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
 .btn { border: 0; border-radius: 12px; padding: 15px; font-weight: 700; font-size: 1rem; background: var(--soft); cursor: pointer; width: 100%; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); }
 .btn:disabled { opacity: .4; cursor: default; }
+.btn.again { background: var(--soft); color: var(--ink); border: 1.5px solid var(--line); }
+.btn.again:disabled { opacity: .35; }
+main.in-game { min-height: calc(100dvh - 150px); justify-content: center; }
 .msg { text-align: center; font-size: 1.15rem; font-weight: 700; margin: 0; min-height: 1.6em; }
 .msg.bad { color: var(--bad); }
 .sub { text-align: center; color: var(--muted); margin: 0; font-size: 0.9rem; }
@@ -161,6 +164,18 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
   }
   const rand = (a, b) => a + Math.random() * (b - a);
   const randInt = (a, b) => Math.floor(rand(a, b + 1));
+  function setAgain(btn, onAgain, label = '다시 하기') {
+    btn.textContent = label;
+    btn.className = 'btn again';
+    btn.disabled = true;
+    btn.onclick = onAgain;
+    setTimeout(() => { btn.disabled = false; }, 1500);
+  }
+  function againButton(onAgain) {
+    const b = h('button', { type: 'button' });
+    setAgain(b, onAgain);
+    return b;
+  }
   const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
   // 참가자(이 기기에만 저장)
@@ -204,6 +219,7 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
     $('#secret').hidden = true;
     const view = $('#view');
     view.innerHTML = '';
+    view.classList.toggle('in-game', !!game);
     window.scrollTo(0, 0);
     if (!game) {
       title.textContent = '파티 게임';
@@ -282,7 +298,7 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
         c.append(h('span', null, h('b', null, win ? '당첨' : '꽝'), h('small', null, N[who])));
         turn++;
         if (turn < n) setMsg();
-        else { msg.textContent = `${N[loser]} 당첨`; msg.classList.add('bad'); foot.append(h('button', { class: 'btn primary', type: 'button', onclick: again }, '다시 하기')); }
+        else { msg.textContent = `${N[loser]} 당첨`; msg.classList.add('bad'); foot.append(againButton(again)); }
       };
       grid.append(c);
     }
@@ -308,7 +324,7 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
       if (navigator.vibrate) try { navigator.vibrate([200, 80, 300]); } catch (e) {}
       who.textContent = `${N[holder]} 걸림`; who.style.color = 'var(--bad)';
       msg.textContent = '펑!';
-      btn.textContent = '다시 하기'; btn.onclick = again;
+      setAgain(btn, again);
     }
     function tick() {
       const t = Date.now() - start;
@@ -368,7 +384,7 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
           over = true; head.classList.add('up');
           if (navigator.vibrate) try { navigator.vibrate(250); } catch (e) {}
           msg.textContent = `${N[turn]} 걸림`; msg.classList.add('bad');
-          foot.append(h('button', { class: 'btn primary', type: 'button', onclick: again }, '다시 하기'));
+          foot.append(againButton(again));
         } else {
           turn = (turn + 1) % n; msg.textContent = `${N[turn]} 차례`;
         }
@@ -431,7 +447,7 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
           draw();
           rows.querySelector(`[data-i="${low[0]}"]`).classList.add('low');
           msg.textContent = `${N[low[0]]} 꼴찌`; msg.classList.add('bad');
-          btn.textContent = '다시 하기'; btn.onclick = again;
+          setAgain(btn, again);
           return;
         }
         draw(); nextMsg();
@@ -460,7 +476,7 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
     const btn = h('button', { class: 'btn primary', type: 'button' }, '돌리기');
     function spin() {
       if (spinning) return;
-      spinning = true; btn.disabled = true; msg.textContent = ''; msg.classList.remove('bad');
+      spinning = true; btn.disabled = true; btn.className = 'btn primary'; msg.textContent = ''; msg.classList.remove('bad');
       tags.forEach((t) => t.classList.remove('hit'));
       const target = takeTarget();
       const pick = target == null ? randInt(0, n - 1) : target;
@@ -472,13 +488,13 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
       btl.style.transition = `transform ${dur}s cubic-bezier(.12,.62,.08,1)`;
       btl.style.transform = `rotate(${angle}deg)`;
       setTimeout(() => {
-        spinning = false; btn.disabled = false;
+        spinning = false;
         tags[pick].classList.add('hit');
         msg.textContent = `${N[pick]} 걸림`; msg.classList.add('bad');
-        btn.textContent = '다시 돌리기';
+        setAgain(btn, spin, '다시 돌리기');
       }, dur * 1000 + 80);
     }
-    btl.onclick = spin; btn.onclick = spin;
+    btl.onclick = () => { if (!btn.disabled) spin(); }; btn.onclick = spin;
     view.append(ring, msg, btn);
   }
 

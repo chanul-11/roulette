@@ -1,6 +1,6 @@
 // 처음 열 때 게임 파일을 전부 저장해 두고, 다음부터는 인터넷 없이도 열리게 한다.
 // 인터넷이 되면 새 버전을 받아 저장하고, 안 되면 저장해 둔 걸 쓴다(룰렛 앱과 같은 방식).
-const CACHE = 'party-games-v5';
+const CACHE = 'party-games-v6';
 const SHELL = ['./', 'index.html', 'ladder.html', 'pinball.html', 'roulette.html',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
@@ -17,7 +17,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request)
+    // GitHub Pages가 페이지를 10분간 캐시하라고 해서, 그냥 받으면 새로 올린 버전이 늦게 보였다 — 매번 서버에 새 버전이 있는지 확인한다
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));

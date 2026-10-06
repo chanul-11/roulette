@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>파티 게임</title>
-<meta name="theme-color" content="#f6f3ea">
+<meta name="theme-color" content="#f6f3ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#24221f" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="파티 게임">
@@ -202,6 +203,30 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 /* 몰래 설정 */
 .secret { border: var(--cut); border-radius: 4px; background: #fff; box-shadow: var(--drop); }
 .secret select { border: var(--cut); border-radius: 4px; background: #fff; }
+
+/* ===== 색종이 테마 · 다크 모드: 숯색 판 위에 색종이. 판 위 글씨는 분필색, 종이 위 글씨는 그대로 검정 ===== */
+@media (prefers-color-scheme: dark) {
+  :root, :root:not([data-theme="light"]) { --bg: #24221f; --chalk: #f2ede0; --muted: #a9a397; --drop: 3px 3px 0 #000; --soft: #f2ede0; }
+  body { color: var(--chalk); }
+  .bar { border-bottom-color: var(--chalk); }
+  .bar h1, .back, h2, .msg, .holder, .ver { color: var(--chalk); }
+  .msg.bad { color: #ff6b52; }
+  .sub { color: var(--muted); }
+  .prow input, .x, .btn, .btn.again, .rrow, .secret, .secret select, .card.open, .ring .nm, .slot, .die { background-color: #f2ede0; color: #1d1d1d; }
+  .x { color: #1d1d1d; }
+  .game, .game b, .game .go, .card, .rrow b, .rrow .sum, .secret label { color: #1d1d1d; }
+  .add { border-color: var(--chalk); color: var(--chalk); }
+  .btn.primary { background: #ffcf3d; color: #1d1d1d; }
+  .rrow.cur { background: #ffcf3d; }
+  .rrow.low { background: var(--bad); }
+  .ring .nm:nth-of-type(5n+1) { background: var(--p2); } .ring .nm:nth-of-type(5n+2) { background: var(--p4); } .ring .nm:nth-of-type(5n+3) { background: var(--p6); }
+  .ring .nm:nth-of-type(5n+4) { background: var(--p8); } .ring .nm:nth-of-type(5n+5) { background: var(--p7); }
+  .ring .nm.hit { background: var(--bad); color: #fff; }
+  .card.win { background: var(--bad); color: #fff; }
+  .slot.used { background: #8e897f; }
+  .bomb { box-shadow: 5px 5px 0 #000; border-color: #000; }
+  .ring .disc { box-shadow: 5px 5px 0 #000; }
+}
 </style>
 </head>
 <body>
@@ -272,13 +297,10 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     $('#ver').textContent = rig.who == null ? 'v3.0' : 'v3.0.1';
   }
   $('#rigWho').onchange = (e) => { rig.who = e.target.value === '' ? null : +e.target.value; syncRig(); };
-  // 게임이 시작될 때 한 번 가져간다. "이번 판만"이면 가져가는 순간 꺼진다.
-  function takeTarget() {
-    const t = rig.who;
-    if (t != null && $('#rigOnce').checked) rig.who = null;
-    syncRig();
-    return t != null && t < players.length ? t : null;
-  }
+  // 몰래 설정은 게임이 결과를 정하는 순간마다 읽는다 — 게임 화면 안에서 제목을 꾹 눌러 정해도
+  // 그 판에 바로 적용된다. "이번 판만"이면 실제로 그 사람이 걸린 뒤에 꺼진다.
+  function currentTarget() { return rig.who != null && rig.who < players.length ? rig.who : null; }
+  function finishRig(used) { if (used && rig.who != null && $('#rigOnce').checked) { rig.who = null; syncRig(); } }
   let pressT;
   const title = $('#title');
   title.addEventListener('pointerdown', () => { pressT = setTimeout(() => { syncRig(); $('#secret').hidden = false; }, 900); });
@@ -349,13 +371,13 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
   }
 
   // ---------- 1. 제비뽑기 ----------
-  // 공정: 당첨 카드를 미리 하나 정해 둔다. 몰래: 카드는 정해 두지 않고, 대상이 뒤집는
-  // 카드가 당첨, 나머지는 전부 꽝이 된다(사람 수만큼 카드라서 대상은 반드시 한 장 뒤집는다).
+  // 공정: 뒤집을 때마다 남은 카드 수에 맞춘 확률(1/남은 장수)로 당첨이 나온다 — 미리 정한 한 장과 같은 확률.
+  // 몰래: 대상이 뒤집는 카드가 당첨, 나머지는 꽝(사람 수만큼 카드라서 대상은 반드시 한 장 뒤집는다).
   function lots(view, again) {
-    const N = names(), n = N.length, target = takeTarget();
-    const winCard = randInt(0, n - 1);
+    const N = names(), n = N.length;
     const order = shuffle([...Array(n).keys()]);
-    let turn = 0, loser = null;
+    const flipped = new Set();
+    let turn = 0, loser = null, rigged = false;
     const msg = h('p', { class: 'msg' });
     const grid = h('div', { class: 'cards' });
     const foot = h('div');
@@ -365,14 +387,20 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
       c.onclick = () => {
         if (c.classList.contains('open') || turn >= n) return;
         const who = order[turn];
-        const win = target == null ? i === winCard : who === target;
-        if (win) loser = who;
+        const t = currentTarget();
+        const tLive = loser == null && t != null && !flipped.has(t) ? t : null;
+        let win;
+        if (loser != null) win = false;
+        else if (tLive != null) win = who === tLive;
+        else win = Math.random() < 1 / (n - turn);
+        if (win) { loser = who; rigged = tLive != null; }
+        flipped.add(who);
         c.classList.add('open'); if (win) c.classList.add('win');
         c.innerHTML = '';
         c.append(h('span', null, h('b', null, win ? '당첨' : '꽝'), h('small', null, N[who])));
         turn++;
         if (turn < n) setMsg();
-        else { msg.textContent = `${N[loser]} 당첨`; msg.classList.add('bad'); foot.append(againButton(again)); }
+        else { finishRig(rigged); msg.textContent = `${N[loser]} 당첨`; msg.classList.add('bad'); foot.append(againButton(again)); }
       };
       grid.append(c);
     }
@@ -385,7 +413,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
   // 처음엔 0.5~2.2초 들고 있으면 터지고, 한 번 빨리 넘겨 빠져나가면 다음엔 0.25~0.7초,
   // 두 번 빠져나가면 그다음엔 넘기기를 누르는 순간 터진다 — 늦어도 대상의 세 번째 차례엔 반드시 걸린다.
   function bomb(view, again) {
-    const N = names(), n = N.length, target = takeTarget();
+    const N = names(), n = N.length;
     let holder = randInt(0, n - 1), start = 0, timer = null, armAt = null, escapes = 0;
     const fuse = rand(10000, 30000), minT = rand(8000, 15000);
     const ball = h('div', { class: 'bomb idle' });
@@ -394,6 +422,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     const btn = h('button', { class: 'btn primary', type: 'button' }, '시작');
     function explode() {
       clearInterval(timer); timer = null;
+      finishRig(currentTarget() === holder);
       ball.classList.add('boom');
       if (navigator.vibrate) try { navigator.vibrate([200, 80, 300]); } catch (e) {}
       who.textContent = `${N[holder]} 걸림`; who.style.color = 'var(--bad)';
@@ -401,7 +430,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
       setAgain(btn, again);
     }
     function tick() {
-      const t = Date.now() - start;
+      const t = Date.now() - start, target = currentTarget();
       const left = target == null ? Math.max(0.2, 1 - t / fuse) : Math.max(0.25, 1 - t / (minT + 12000));
       ball.style.setProperty('--speed', `${(0.25 + left * 0.85).toFixed(2)}s`);
       let boom = false;
@@ -421,6 +450,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
         return;
       }
       if (!timer) return;
+      const target = currentTarget();
       if (target != null && holder === target && Date.now() - start >= minT) {
         if (escapes >= 2) { explode(); return; }   // 넘기려는 순간 터짐
         escapes++;
@@ -433,11 +463,13 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
   }
 
   // ---------- 3. 해적 룰렛 ----------
-  // 공정: 함정 구멍 하나를 미리 정한다. 몰래: 함정은 없고, 대상이 1번째(50%) 또는 2번째에
-  // 찌르는 순간 튀어나온다. 구멍은 2n+4개라 대상이 두 번 찌를 차례가 오기 전에 모자라지 않는다.
+  // 공정: 찌를 때마다 1/남은 구멍 수 확률로 튀어나온다(함정 하나를 미리 정한 것과 같은 확률).
+  // 몰래: 대상이 1번째(50%) 또는 2번째로 찌르는 순간 튀어나오고 다른 사람은 절대 안 걸린다.
+  // 구멍은 2n+4개라 대상이 두 번 찌를 차례가 오기 전에 모자라지 않는다.
   function pirate(view, again) {
-    const N = names(), n = N.length, target = takeTarget();
-    const slots = Math.max(12, 2 * n + 4), trap = randInt(0, slots - 1);
+    const N = names(), n = N.length;
+    const slots = Math.max(12, 2 * n + 4);
+    let used = 0;
     const popOn = Math.random() < 0.5 ? 1 : 2;
     let turn = randInt(0, n - 1), stabs = 0, over = false;
     const msg = h('p', { class: 'msg' }, `${N[turn]} 차례`);
@@ -450,11 +482,14 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
       s.onclick = () => {
         if (over || s.classList.contains('used')) return;
         s.classList.add('used');
+        const target = currentTarget();
         let pop;
-        if (target == null) pop = i === trap;
+        if (target == null) pop = Math.random() < 1 / (slots - used);
         else if (turn === target) { stabs++; pop = stabs >= popOn; }
         else pop = false;
+        used++;
         if (pop) {
+          finishRig(target != null);
           over = true; head.classList.add('up');
           if (navigator.vibrate) try { navigator.vibrate(250); } catch (e) {}
           msg.textContent = `${N[turn]} 걸림`; msg.classList.add('bad');
@@ -470,7 +505,8 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 
   // ---------- 4. 주사위 꼴찌 ----------
   // 공정: 그냥 굴린다. 꼴찌가 여럿이면 그 사람들만 다시 굴린다. 몰래: 기준값 F(5~7)를 정해
-  // 대상은 2~F-1, 나머지는 F+1~12만 나온다 — 대상이 혼자 꼴찌가 된다.
+  // 대상은 2~F-1(이미 굴린 사람보다 낮게), 나머지는 F+1~12(대상이 이미 굴렸으면 그보다 높게)만 나온다.
+  // 대상이 굴리기 전에만 켜면 된다 — 게임 도중에 켜도 된다.
   const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
   function dieEl(v) {
     const d = h('div', { class: 'die' + (v ? '' : ' blank') });
@@ -479,8 +515,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
   }
   function pairFor(sum) { const lo = Math.max(1, sum - 6), hi = Math.min(6, sum - 1); const a = randInt(lo, hi); return [a, sum - a]; }
   function dice(view, again) {
-    const N = names(), n = N.length, target = takeTarget();
+    const N = names(), n = N.length;
     const F = randInt(5, 7);
+    const sumOf = (k) => res[k][0] + res[k][1];
     let round = [...Array(n).keys()], idx = 0, rolling = false, timer = null;
     const res = Array(n).fill(null);
     const rows = h('div', { class: 'rolls' });
@@ -496,8 +533,15 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
       });
     }
     function finalFor(i) {
-      if (target == null) return [randInt(1, 6), randInt(1, 6)];
-      return pairFor(i === target ? randInt(2, F - 1) : randInt(F + 1, 12));
+      const t = currentTarget();
+      if (t == null || !round.includes(t)) return [randInt(1, 6), randInt(1, 6)];
+      if (i === t) {
+        const others = round.filter((k) => k !== t && res[k]).map(sumOf);
+        const cap = Math.min(F - 1, others.length ? Math.min(...others) - 1 : 12);
+        return pairFor(randInt(2, Math.max(2, cap)));
+      }
+      const floor = res[t] ? sumOf(t) + 1 : F + 1;
+      return pairFor(randInt(Math.min(12, floor), 12));
     }
     function nextMsg() { msg.textContent = idx < round.length ? `${N[round[idx]]} 차례` : ''; }
     btn.onclick = () => {
@@ -519,6 +563,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
             draw(); return;
           }
           draw();
+          finishRig(currentTarget() === low[0]);
           rows.querySelector(`[data-i="${low[0]}"]`).classList.add('low');
           msg.textContent = `${N[low[0]]} 꼴찌`; msg.classList.add('bad');
           setAgain(btn, again);
@@ -552,7 +597,8 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
       if (spinning) return;
       spinning = true; btn.disabled = true; btn.className = 'btn primary'; msg.textContent = ''; msg.classList.remove('bad');
       tags.forEach((t) => t.classList.remove('hit'));
-      const target = takeTarget();
+      const target = currentTarget();
+      finishRig(target != null);
       const pick = target == null ? randInt(0, n - 1) : target;
       const sector = 360 / n;
       const want = pick * sector + rand(-0.32, 0.32) * sector;           // 병 입구(위쪽)가 가리킬 각도

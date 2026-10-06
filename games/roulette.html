@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>운명의 룰렛</title>
-<meta name="theme-color" content="#f6f3ea">
+<meta name="theme-color" content="#f6f3ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#24221f" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -167,6 +168,19 @@
   .secret { border: 2.5px solid var(--ink); border-radius: 4px; background: #fff; box-shadow: 3px 3px 0 var(--ink); }
   .secret select, .secret button { border: 2px solid var(--ink); background: #fff; border-radius: 4px; }
 
+
+  /* ===== 색종이 테마 · 다크 모드 ===== */
+  @media (prefers-color-scheme: dark) {
+    :root, :root:not([data-theme="light"]) { --bg: #24221f; --ink: #f2ede0; --muted: #a9a397; --line: #f2ede0; }
+    .card { color: #1d1d1d; box-shadow: 3px 3px 0 #000; }
+    .card .label, .card .count, .card .setting, .card .check, .card .empty, ol.history li { color: #1d1d1d; }
+    ol.history li { border-bottom-color: #1d1d1d; }
+    textarea, .ghost, .seg, .secret, .secret select, .secret button { background: #f2ede0; color: #1d1d1d; border-color: #1d1d1d; }
+    .seg button { color: #1d1d1d; }
+    .seg button[aria-pressed="true"] { background: #1d1d1d; color: #ffcf3d; }
+    .spin { background: #ffcf3d; color: #1d1d1d; border-color: #000; box-shadow: 4px 4px 0 #ff4a2e; }
+    .secret label { color: #5c5a52; }
+  }
 </style>
 </head>
 <body>

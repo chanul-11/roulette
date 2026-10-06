@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>핀볼 배틀로얄</title>
-<meta name="theme-color" content="#f6f3ea">
+<meta name="theme-color" content="#f6f3ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#24221f" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="파티 게임">
@@ -96,6 +97,20 @@ button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none;
 .secret-colors button { background: #fff; border: 2px solid #1d1d1d; box-shadow: none; font-family: inherit; font-size: 14px; }
 .secret-colors button.on { background: #ffcf3d; border-color: #1d1d1d; }
 .secret-row { color: #5c5a52; }
+
+/* ===== 색종이 테마 · 다크 모드: 숯색 판, 판 위 글씨는 분필색 ===== */
+@media (prefers-color-scheme: dark) {
+  html, body { background: #24221f; color: #f2ede0; }
+  #participant-list input, button, .secret { background: #f2ede0; color: #1d1d1d; box-shadow: 3px 3px 0 #000; }
+  #start-btn, #drop-btn, #replay-btn { background: #ffcf3d; color: #1d1d1d; }
+  #add-participant-btn { background: transparent; color: #f2ede0; border-color: #f2ede0; box-shadow: none; }
+  .remove-participant-btn { background: #ff6b4a; color: #1d1d1d; }
+  .secret-colors button { background: #fff; box-shadow: none; }
+  .secret-colors button.on { background: #ffcf3d; }
+  #board-container canvas { border-color: #f2ede0; box-shadow: 4px 4px 0 #000; }
+  #minimap-container canvas { border-color: #f2ede0; }
+  .app-version { color: #8a867a; }
+}
 
 </style>
 </head>

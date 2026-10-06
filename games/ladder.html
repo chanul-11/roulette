@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f6bff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="파티 게임">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>사다리 타기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 일반 사다리 앱 방식 — 한 화면 안에 위 이름칸, 가운데 사다리(시작 전엔 가림), 아래 결과칸 */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --ink: #1d2129;
+  --muted: #8a909c;
+  --line: #e3e5ea;
+  --rail: #c9ced8;
+  --rung: #4b5263;
+  --accent: #2f6bff;
+  --accent-ink: #ffffff;
+  --bad: #ff4d4f;
+  --cover: #eceef2;
+  --font: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", -apple-system, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --surface: #1b1e24; --ink: #eef0f4; --muted: #8f96a3; --line: #2b2f37;
+    --rail: #3c424d; --rung: #aab1bf; --accent: #5b8cff; --accent-ink: #0f1115; --bad: #ff6b6b; --cover: #23272f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --surface: #1b1e24; --ink: #eef0f4; --muted: #8f96a3; --line: #2b2f37;
+  --rail: #3c424d; --rung: #aab1bf; --accent: #5b8cff; --accent-ink: #0f1115; --bad: #ff6b6b; --cover: #23272f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--surface); color: var(--ink); font-family: var(--font); font-size: 15px; padding-inline: 16px; padding-block: 0 40px; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--surface); border-bottom: 1px solid var(--line); margin-inline: -16px; padding-block: 13px; text-align: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.topbar h1 { margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; display: inline-block; padding: 4px 10px; cursor: default; }
+
+.card { padding-block: 8px; display: flex; flex-direction: column; gap: 12px; }
+.foot { text-align: center; color: var(--muted); font-size: 0.72rem; margin: 8px 0 0; font-variant-numeric: tabular-nums; user-select: none; -webkit-user-select: none; }
+.count { display: flex; align-items: center; justify-content: space-between; padding-inline: 4px; }
+.count span { font-weight: 500; }
+.stepper { display: inline-flex; align-items: center; gap: 4px; }
+.stepper button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.stepper button:disabled { opacity: .3; cursor: default; }
+.stepper output { min-width: 52px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.lane { display: grid; gap: 4px; }
+.tok { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 0.8rem; font-weight: 700; background: var(--pc); border: 0; cursor: pointer; font-family: inherit; }
+.num.done { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--pc); }
+.name, .res { width: 100%; min-width: 0; text-align: center; font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--bg); border: 1px solid transparent; border-radius: 8px; padding: 7px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+input.name:focus, input.res:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.name.static { background: transparent; font-weight: 500; cursor: pointer; padding-inline: 0; }
+.res.static { background: var(--bg); font-weight: 500; }
+.res.hidden { color: var(--muted); }
+.res.bad { background: var(--bad); color: #fff; }
+.res.hit { animation: hit .5s ease; }
+@keyframes hit { 50% { transform: scale(1.12); } }
+
+.stage { position: relative; overflow: hidden; }
+svg.ladder { width: 100%; height: 320px; display: block; }
+svg .rail { stroke: var(--rail); stroke-width: 3; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+svg .rung { stroke: var(--rung); stroke-width: 3; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+svg .trail { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; transition: opacity .2s; }
+svg .trail.dim { opacity: .12; }
+.cover { position: absolute; inset: 0; background: var(--cover); border-radius: 6px; display: grid; place-items: center; color: var(--muted); font-size: 3rem; font-weight: 700; transition: opacity .45s ease, transform .45s ease; }
+.cover.off { opacity: 0; transform: scale(.98); pointer-events: none; }
+
+.btns { display: flex; gap: 8px; }
+.btn { flex: 1; font: inherit; font-weight: 700; font-size: 1rem; border-radius: 12px; padding: 14px 10px; cursor: pointer; border: 0; background: var(--bg); color: var(--ink); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .4; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.msg { text-align: center; margin: 0; min-height: 1.5em; font-weight: 500; }
+
+.list { display: flex; flex-direction: column; }
+.list h2 { margin: 0 0 6px; font-size: 0.95rem; color: var(--muted); font-weight: 500; }
+.item { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-top: 1px solid var(--line); }
+.item .num { width: 24px; height: 24px; font-size: 0.75rem; cursor: default; flex: none; }
+.item b { flex: 1; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item em { font-style: normal; font-weight: 700; }
+.item.bad em { color: var(--bad); }
+
+.secret { border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.secret h2 { margin: 0; font-size: 1rem; }
+.secret p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.secret label { display: flex; gap: 8px; align-items: center; font-size: 0.9rem; }
+.secret select { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+@media (max-width: 420px) {
+  .name, .res { font-size: 0.75rem; }
+  .num { width: 24px; height: 24px; font-size: 0.72rem; }
+  svg.ladder { height: 280px; }
+}
+@media (prefers-reduced-motion: reduce) { .cover, svg .trail { transition: none; } .res.hit { animation: none; } }
+</style>
+
+</head>
+<body>
+<a href="./" aria-label="게임 목록" style="position:fixed;z-index:50;left:calc(env(safe-area-inset-left,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 8px);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(128,128,128,.22);color:inherit;text-decoration:none;font-size:24px;line-height:1;font-family:system-ui,sans-serif">‹</a>
+<div class="wrap">
+  <div class="topbar"><h1 id="title">사다리 타기</h1></div>
+
+  <section class="card secret" id="secret" hidden>
+    <h2>몰래 설정</h2>
+        <label><input type="checkbox" id="rigOn"> 켜기</label>
+    <div class="two">
+      <select id="rigWho" aria-label="걸릴 사람"></select>
+      <select id="rigSlot" aria-label="걸릴 결과"></select>
+    </div>
+    <label><input type="checkbox" id="rigOnce" checked> 이번 판에만 적용</label>
+    <button class="btn" id="secretClose" type="button">닫기</button>
+  </section>
+
+  <section class="card" id="game">
+    <div class="count" id="countRow">
+      <span>참여 인원</span>
+      <div class="stepper">
+        <button type="button" id="minus" aria-label="한 명 빼기">−</button>
+        <output id="count">4명</output>
+        <button type="button" id="plus" aria-label="한 명 추가">+</button>
+      </div>
+    </div>
+    <div class="lane" id="topLane"></div>
+    <div class="stage">
+      <svg class="ladder" id="svg" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-label="사다리"></svg>
+      <div class="cover" id="cover">?</div>
+    </div>
+    <div class="lane" id="bottomLane"></div>
+    <p class="msg" id="msg"></p>
+    <div class="btns" id="btns"></div>
+  </section>
+
+  <section class="card list" id="list" hidden>
+    <h2>전체 결과</h2>
+    <div id="items"></div>
+  </section>
+  <p class="foot" id="ver">v2.4</p>
+</div>
+
+<script>
+(() => {
+  const MIN = 2, MAX = 10, PASS = '꽝';
+  const COLORS = ['#ff6b6b', '#ffa94d', '#f5c400', '#51cf66', '#20c997', '#339af0', '#5c7cfa', '#9775fa', '#f06595', '#868e96'];
+  const $ = (id) => document.getElementById(id);
+  let n = 4, uid = 0;
+  const people = [], prizes = [];
+  function sync() {
+    while (people.length < n) people.push({ id: ++uid, name: '' });
+    while (prizes.length < n) prizes.push({ id: ++uid, text: prizes.length === 0 ? '당첨' : PASS });
+    people.length = n; prizes.length = n;
+  }
+  const label = (p, i) => p.name.trim() || `참가자${i + 1}`;
+  const byId = (list, id) => list.find((x) => x.id === id);
+  const idx = (pid) => people.findIndex((p) => p.id === pid);
+  const color = (pid) => COLORS[idx(pid) % COLORS.length];
+  const isBad = (z) => z.text.trim() !== '' && z.text.trim() !== PASS && z.text.trim() !== '통과';
+
+  // 판 상태
+  let g = { started: false, rungs: null, levels: 0, done: new Map(), busy: false, queue: [], focus: null, rig: null };
+
+  // ---------- 숨은 설정: 제목 1초 꾹 ----------
+  function renderSecret() {
+    const who = $('rigWho'), slot = $('rigSlot'), pw = who.value, ps = slot.value;
+    who.innerHTML = ''; slot.innerHTML = '';
+    people.forEach((p, i) => who.add(new Option(label(p, i), p.id)));
+    prizes.forEach((z, i) => slot.add(new Option(`${i + 1}. ${z.text || '빈 칸'}`, z.id)));
+    if (people.some((p) => String(p.id) === pw)) who.value = pw;
+    if (prizes.some((z) => String(z.id) === ps)) slot.value = ps;
+    else { const b = prizes.find(isBad); if (b) slot.value = b.id; }
+  }
+  const updateDot = () => { $('ver').textContent = $('rigOn').checked ? 'v2.4.1' : 'v2.4'; };   // 켜져 있으면 버전 끝에 .1
+  $('rigOn').onchange = updateDot;
+  let t;
+  const title = $('title');
+  title.addEventListener('pointerdown', () => { t = setTimeout(() => { renderSecret(); $('secret').hidden = false; }, 900); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((e) => title.addEventListener(e, () => clearTimeout(t)));
+  title.addEventListener('contextmenu', (e) => e.preventDefault());
+  $('secretClose').onclick = () => { $('secret').hidden = true; };
+
+  // ---------- 사다리 계산 ----------
+  function randomLadder() {
+    const L = Math.max(10, n * 3);
+    const r = Array.from({ length: L }, () => new Set());
+    for (let k = 0; k < L; k++) for (let j = 0; j < n - 1; j++) if (!r[k].has(j - 1) && Math.random() < 0.42) r[k].add(j);
+    for (let j = 0; j < n - 1; j++) if (!r.some((s) => s.has(j))) {
+      for (let q = 0; q < 50; q++) { const k = Math.floor(Math.random() * L); if (!r[k].has(j - 1) && !r[k].has(j + 1)) { r[k].add(j); break; } }
+    }
+    const jit = r.map((set) => { const m = new Map(); set.forEach((j) => m.set(j, (Math.random() - 0.5) * 0.6)); return m; });
+    return { r, L, jit };
+  }
+  function trace(start, r) {
+    let c = start; const path = [[c, -1]];
+    r.forEach((s, k) => {
+      if (s.has(c - 1)) { path.push([c, k, c - 1]); c--; path.push([c, k, c]); }
+      else if (s.has(c)) { path.push([c, k, c]); c++; path.push([c, k, c - 1]); }
+    });
+    path.push([c, r.length]);
+    return { end: c, path };
+  }
+  const X = (c) => ((c + 0.5) / n) * 1000;
+  const Y = (k, j) => (k < 0 ? 0 : k >= g.levels ? 600 : 30 + (k + 0.5 + (j == null || !g.jit ? 0 : g.jit[k].get(j) || 0)) * (540 / g.levels));
+
+  // ---------- 그리기 ----------
+  function render() {
+    sync();
+    const cols = `repeat(${n}, minmax(0, 1fr))`;
+    const top = $('topLane'), bot = $('bottomLane');
+    top.style.gridTemplateColumns = cols; bot.style.gridTemplateColumns = cols;
+    top.innerHTML = ''; bot.innerHTML = '';
+    $('countRow').hidden = g.started;
+    $('count').textContent = `${n}명`;
+    $('minus').disabled = n <= MIN; $('plus').disabled = n >= MAX;
+
+    people.forEach((p, i) => {
+      const tok = document.createElement('div'); tok.className = 'tok'; tok.style.setProperty('--pc', COLORS[i % COLORS.length]);
+      const num = document.createElement('button'); num.type = 'button'; num.className = 'num'; num.textContent = i + 1;
+      num.setAttribute('aria-label', `${label(p, i)} 사다리 타기`);
+      if (g.done.has(p.id)) num.classList.add('done');
+      num.onclick = () => onPick(p.id);
+      let nm;
+      if (!g.started) {
+        nm = document.createElement('input'); nm.type = 'text'; nm.id = `name-${i}`; nm.className = 'name'; nm.maxLength = 12;
+        nm.placeholder = `참가자${i + 1}`; nm.value = p.name;
+        nm.oninput = () => { p.name = nm.value; };
+      } else {
+        nm = document.createElement('div'); nm.className = 'name static'; nm.textContent = label(p, i);
+        nm.onclick = () => onPick(p.id);
+      }
+      tok.append(num, nm); top.append(tok);
+    });
+    const opened = new Set(g.done.values());
+    prizes.forEach((z, i) => {
+      let el;
+      if (!g.started) {
+        el = document.createElement('input'); el.type = 'text'; el.id = `res-${i}`; el.className = 'res'; el.maxLength = 12;
+        el.placeholder = '결과'; el.value = z.text;
+        el.oninput = () => { z.text = el.value; };
+      } else {
+        el = document.createElement('div'); el.className = 'res static'; el.dataset.id = z.id;
+        if (opened.has(z.id)) { el.textContent = z.text || '-'; if (isBad(z)) el.classList.add('bad'); }
+        else { el.textContent = '?'; el.classList.add('hidden'); }
+      }
+      bot.append(el);
+    });
+
+    let s = '';
+    for (let c = 0; c < n; c++) s += `<line class="rail" x1="${X(c)}" y1="0" x2="${X(c)}" y2="600"/>`;
+    if (g.rungs) g.rungs.forEach((set, k) => set.forEach((j) => { s += `<line class="rung" x1="${X(j)}" y1="${Y(k, j)}" x2="${X(j + 1)}" y2="${Y(k, j)}"/>`; }));
+    $('svg').innerHTML = s + '<g id="trails"></g>';
+    g.done.forEach((_, pid) => addTrail(pid, false));
+    $('cover').classList.toggle('off', g.started);
+
+    const finished = g.started && g.done.size === n;
+    const btns = $('btns'); btns.innerHTML = '';
+    const add = (txt, fn, cls = '', dis = false) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = txt; b.onclick = fn; b.disabled = dis; btns.append(b); };
+    if (!g.started) add('시작', start, 'primary');
+    else if (!finished) { add('처음으로', reset); add('결과 한번에 보기', revealAll, 'primary', g.busy); }
+    else { add('처음으로', reset); add('다시 하기', again, 'primary'); }
+    renderList(finished);
+  }
+
+  function renderList(show) {
+    $('list').hidden = !show;
+    if (!show) return;
+    const box = $('items'); box.innerHTML = '';
+    people.forEach((p, i) => {
+      const z = byId(prizes, g.done.get(p.id));
+      const row = document.createElement('div'); row.className = 'item' + (isBad(z) ? ' bad' : '');
+      row.style.setProperty('--pc', COLORS[i % COLORS.length]);
+      const num = document.createElement('span'); num.className = 'num'; num.textContent = i + 1;
+      const b = document.createElement('b'); b.textContent = label(p, i);
+      const em = document.createElement('em'); em.textContent = z.text || '-';
+      row.append(num, b, em); box.append(row);
+    });
+  }
+
+  // ---------- 진행 ----------
+  function start() {
+    sync();
+    g.rig = $('rigOn').checked ? { personId: +$('rigWho').value, prizeId: +$('rigSlot').value } : null;
+    if (g.rig && $('rigOnce').checked) { $('rigOn').checked = false; updateDot(); }
+    let lad;
+    // 몰래 설정: 무작위 사다리를 계속 새로 그려 보다가, 정한 사람이 정한 결과에 닿는 것만 쓴다
+    for (let q = 0; q < 20000; q++) {
+      lad = randomLadder();
+      if (!g.rig) break;
+      const s = idx(g.rig.personId), e = prizes.findIndex((z) => z.id === g.rig.prizeId);
+      if (s < 0 || e < 0 || trace(s, lad.r).end === e) break;
+    }
+    g.rungs = lad.r; g.levels = lad.L; g.jit = lad.jit; g.started = true; g.done = new Map(); g.focus = null;
+    $('secret').hidden = true;
+    $('msg').textContent = '';
+    render();
+  }
+  function again() { g.started = false; g.rungs = null; g.done = new Map(); start(); }
+  function reset() {
+    if (g.busy) return;
+    g = { started: false, rungs: null, levels: 0, done: new Map(), busy: false, queue: [], focus: null, rig: null };
+    $('msg').textContent = '';
+    render();
+  }
+
+  function addTrail(pid, animate) {
+    const { path } = trace(idx(pid), g.rungs);
+    const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    pl.setAttribute('points', path.map(([c, k, j]) => `${X(c)},${Y(k, j)}`).join(' '));
+    pl.setAttribute('class', 'trail' + (g.focus && g.focus !== pid ? ' dim' : ''));
+    pl.setAttribute('stroke', color(pid)); pl.dataset.id = pid;
+    $('trails').append(pl);
+    if (!animate) return Promise.resolve();
+    const len = path.reduce((a, p, i) => (i ? a + Math.hypot(X(p[0]) - X(path[i - 1][0]), Y(p[1], p[2]) - Y(path[i - 1][1], path[i - 1][2])) : 0), 0);
+    pl.style.strokeDasharray = len; pl.style.strokeDashoffset = len;
+    const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 1600;
+    return new Promise((res) => {
+      const t0 = performance.now();
+      const step = (now) => { const p = Math.min(1, (now - t0) / dur); pl.style.strokeDashoffset = len * (1 - p); p < 1 ? requestAnimationFrame(step) : res(); };
+      requestAnimationFrame(step);
+    });
+  }
+  async function play(pid) {
+    if (g.busy || g.done.has(pid) || !g.started) return;
+    g.busy = true; g.focus = null;
+    document.querySelectorAll('svg .trail.dim').forEach((el) => el.classList.remove('dim'));
+    const i = idx(pid);
+    $('msg').textContent = '';
+    await addTrail(pid, true);
+    const z = prizes[trace(i, g.rungs).end];
+    g.done.set(pid, z.id); g.busy = false;
+    render();
+    const el = document.querySelector(`#bottomLane .res[data-id="${z.id}"]`);
+    if (el) el.classList.add('hit');
+    $('msg').textContent = `${label(people[i], i)} → ${z.text || '-'}`;
+    if (g.queue.length) play(g.queue.shift());
+  }
+  function revealAll() { g.queue = people.map((p) => p.id).filter((id) => !g.done.has(id)); if (!g.busy && g.queue.length) play(g.queue.shift()); }
+  function onPick(pid) {
+    if (!g.started) return;
+    if (!g.done.has(pid)) return play(pid);
+    g.focus = g.focus === pid ? null : pid;      // 끝난 사람은 그 경로만 진하게
+    document.querySelectorAll('svg .trail').forEach((el) => el.classList.toggle('dim', !!g.focus && +el.dataset.id !== g.focus));
+  }
+
+  $('minus').onclick = () => { if (n > MIN) { n--; render(); } };
+  $('plus').onclick = () => { if (n < MAX) { n++; render(); } };
+  render();
+})();
+</script>
+
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>

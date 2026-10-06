@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>파티 게임</title>
+<meta name="theme-color" content="#2f6bff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="파티 게임">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root {
+  --bg: #ffffff;
+  --soft: #f3f4f7;
+  --ink: #1d2129;
+  --muted: #8a909c;
+  --line: #e3e5ea;
+  --accent: #2f6bff;
+  --accent-ink: #ffffff;
+  --bad: #f0443a;
+  --wood: #b07a45;
+  --wood-dark: #7d5328;
+  --font: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", -apple-system, system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121418; --soft: #1e2128; --ink: #eef0f4; --muted: #8f96a3; --line: #2c3038; --accent: #5b8cff; --accent-ink: #0f1115; --bad: #ff6158; --wood: #9c6b3c; --wood-dark: #6b4523; color-scheme: dark; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+.back.off { visibility: hidden; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; }
+body { padding: env(safe-area-inset-top, 0px) 16px calc(env(safe-area-inset-bottom, 0px) + 24px); }
+button { font: inherit; color: inherit; }
+.wrap { max-width: 520px; margin: 0 auto; }
+
+.bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); margin: 0 -16px; padding: 12px 16px; display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; }
+.bar h1 { margin: 0; text-align: center; font-size: 1.05rem; font-weight: 700; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.back { width: 40px; height: 36px; border: 0; background: none; font-size: 1.8rem; line-height: 1; cursor: pointer; padding: 0; }
+
+main { padding-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
+.players { display: flex; flex-direction: column; gap: 8px; }
+.prow { display: flex; gap: 8px; }
+.prow input { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: var(--soft); border: 1px solid transparent; border-radius: 10px; padding: 11px 12px; }
+.prow input:focus { outline: none; border-color: var(--accent); background: var(--bg); }
+.x { width: 44px; border: 0; border-radius: 10px; background: var(--soft); color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+.add { border: 1px dashed var(--line); background: none; border-radius: 10px; padding: 10px; color: var(--muted); cursor: pointer; }
+.games { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.game { display: flex; align-items: center; gap: 14px; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 14px 2px; cursor: pointer; }
+.game b { display: block; font-size: 1rem; }
+.game small { color: var(--muted); font-size: 0.82rem; }
+.game .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--soft); display: grid; place-items: center; flex: none; }
+.game .ic svg { width: 26px; height: 26px; }
+.game .go { margin-left: auto; color: var(--muted); font-size: 1.3rem; }
+
+.btn { border: 0; border-radius: 12px; padding: 15px; font-weight: 700; font-size: 1rem; background: var(--soft); cursor: pointer; width: 100%; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .4; cursor: default; }
+.msg { text-align: center; font-size: 1.15rem; font-weight: 700; margin: 0; min-height: 1.6em; }
+.msg.bad { color: var(--bad); }
+.sub { text-align: center; color: var(--muted); margin: 0; font-size: 0.9rem; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 제비뽑기 */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+.card { aspect-ratio: 3 / 4; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 1.6rem; font-weight: 700; cursor: pointer; perspective: 600px; transition: transform .35s ease, background .2s; display: grid; place-items: center; padding: 6px; }
+.card.open { background: var(--soft); color: var(--ink); transform: rotateY(180deg); cursor: default; }
+.card.open > span { transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.card.open b { font-size: 1.15rem; }
+.card.open small { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+.card.win { background: var(--bad); color: #fff; }
+.card.win small { color: #fff; }
+
+/* 폭탄 */
+.bombwrap { display: grid; place-items: center; padding: 28px 0 12px; }
+.bomb { width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #4a4f5a, #15171c 70%); position: relative; animation: pulse var(--speed, 1s) ease-in-out infinite; }
+.bomb::before { content: ""; position: absolute; width: 34px; height: 26px; background: #3a3e47; top: -16px; left: 50%; transform: translateX(-50%) rotate(8deg); border-radius: 4px; }
+.bomb::after { content: ""; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #ffb020; top: -36px; left: calc(50% + 14px); box-shadow: 0 0 12px 4px #ff8a00; animation: spark .25s steps(2) infinite; }
+.bomb.idle, .bomb.idle::after { animation: none; }
+.bomb.idle::after { background: #555; box-shadow: none; }
+.bomb.boom { animation: shake .5s; background: radial-gradient(circle, #fff3b0, #ff7a00 45%, #e2261b 70%); }
+.bomb.boom::before, .bomb.boom::after { display: none; }
+@keyframes pulse { 50% { transform: scale(1.06); } }
+@keyframes spark { 50% { transform: scale(1.5); } }
+@keyframes shake { 20%, 60% { transform: translateX(-8px) scale(1.25); } 40%, 80% { transform: translateX(8px) scale(1.25); } }
+.holder { text-align: center; font-size: 1.6rem; font-weight: 800; margin: 0; }
+
+/* 해적 룰렛 */
+.barrel { position: relative; width: min(300px, 82vw); aspect-ratio: 1; margin: 30px auto 6px; }
+.barrel .body { position: absolute; inset: 14%; border-radius: 50%; background: repeating-linear-gradient(90deg, var(--wood) 0 18px, var(--wood-dark) 18px 21px); box-shadow: inset 0 0 0 6px var(--wood-dark); }
+.pirate { position: absolute; left: 50%; top: 32%; width: 70px; height: 70px; margin-left: -35px; border-radius: 50%; background: #f2c9a0; transition: transform .5s cubic-bezier(.2,1.6,.4,1); z-index: 1; }
+.pirate::before { content: ""; position: absolute; left: -6px; right: -6px; top: -10px; height: 28px; background: #222; border-radius: 30px 30px 6px 6px; }
+.pirate::after { content: ""; position: absolute; left: 16px; top: 30px; width: 12px; height: 12px; border-radius: 50%; background: #222; box-shadow: 26px 0 0 #222; }
+.pirate.up { transform: translateY(-110px) rotate(-12deg); }
+.slot { position: absolute; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; border: 3px solid var(--wood-dark); background: var(--soft); cursor: pointer; padding: 0; z-index: 2; }
+.slot.used { background: #9aa3b2; border-color: #6b7383; cursor: default; }
+.slot.used::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 26px; margin: -13px 0 0 -3px; background: #e8ecf2; border-radius: 2px; transform: rotate(35deg); }
+
+/* 주사위 */
+.rolls { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.rrow { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.rrow.cur { background: var(--soft); border-radius: 10px; }
+.rrow b { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rrow .sum { width: 2.4em; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rrow.low b, .rrow.low .sum { color: var(--bad); }
+.die { width: 34px; height: 34px; border-radius: 8px; background: var(--bg); border: 1.5px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 4px; }
+.die i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); place-self: center; visibility: hidden; }
+.die i.on { visibility: visible; }
+.die.blank { opacity: .35; }
+
+/* 병 돌리기 */
+.ring { position: relative; width: min(320px, 86vw); aspect-ratio: 1; margin: 18px auto 4px; }
+.ring .disc { position: absolute; inset: 12%; border-radius: 50%; background: var(--soft); }
+.ring .nm { position: absolute; transform: translate(-50%, -50%); font-weight: 700; font-size: 0.9rem; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 4px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
+.ring .nm.hit { background: var(--bad); color: #fff; border-color: var(--bad); }
+.bottle { position: absolute; left: 50%; top: 50%; width: 46px; height: 190px; margin: -95px 0 0 -23px; cursor: pointer; border: 0; background: none; padding: 0; }
+.bottle svg { width: 100%; height: 100%; display: block; }
+
+/* 몰래 설정 */
+.secret { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.secret select { font: inherit; color: var(--ink); background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.secret label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--muted); }
+.ver { text-align: center; color: var(--muted); font-size: 0.72rem; margin: 28px 0 0; user-select: none; -webkit-user-select: none; }
+@media (prefers-reduced-motion: reduce) { .bomb, .bomb::after, .card, .pirate { animation: none; transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <button class="back off" id="back" type="button" aria-label="뒤로">‹</button>
+    <h1 id="title">파티 게임</h1>
+    <span></span>
+  </header>
+  <section class="secret" id="secret" hidden>
+    <select id="rigWho" aria-label="대상"></select>
+    <label><input type="checkbox" id="rigOnce" checked> 이번 판만</label>
+    <button class="btn" id="secretClose" type="button">닫기</button>
+  </section>
+  <main id="view"></main>
+  <p class="ver" id="ver">v3.0</p>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통 ----------
+  const $ = (s, r = document) => r.querySelector(s);
+  function h(tag, props, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(props || {})) {
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else if (k === 'html') e.innerHTML = v;
+      else e.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+    return e;
+  }
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const randInt = (a, b) => Math.floor(rand(a, b + 1));
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  // 참가자(이 기기에만 저장)
+  let players;
+  try { players = JSON.parse(localStorage.getItem('party.players')); } catch (e) { players = null; }
+  if (!Array.isArray(players) || players.length < 2) players = ['', '', '', ''];
+  const savePlayers = () => { try { localStorage.setItem('party.players', JSON.stringify(players)); } catch (e) {} };
+  const names = () => players.map((p, i) => (p || '').trim() || `참가자${i + 1}`);
+
+  // ---------- 몰래 설정: 제목 1초 꾹 ----------
+  // 고른 사람이 걸리게 한다. 켜져 있는지는 맨 아래 버전 끝(v3.0 → v3.0.1)으로만 보인다.
+  const rig = { who: null };
+  function syncRig() {
+    if (rig.who != null && rig.who >= players.length) rig.who = null;
+    const sel = $('#rigWho');
+    sel.innerHTML = '';
+    sel.add(new Option('끄기', ''));
+    names().forEach((n, i) => sel.add(new Option(n, i)));
+    sel.value = rig.who == null ? '' : String(rig.who);
+    $('#ver').textContent = rig.who == null ? 'v3.0' : 'v3.0.1';
+  }
+  $('#rigWho').onchange = (e) => { rig.who = e.target.value === '' ? null : +e.target.value; syncRig(); };
+  // 게임이 시작될 때 한 번 가져간다. "이번 판만"이면 가져가는 순간 꺼진다.
+  function takeTarget() {
+    const t = rig.who;
+    if (t != null && $('#rigOnce').checked) rig.who = null;
+    syncRig();
+    return t != null && t < players.length ? t : null;
+  }
+  let pressT;
+  const title = $('#title');
+  title.addEventListener('pointerdown', () => { pressT = setTimeout(() => { syncRig(); $('#secret').hidden = false; }, 900); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => title.addEventListener(ev, () => clearTimeout(pressT)));
+  title.addEventListener('contextmenu', (e) => e.preventDefault());
+  $('#secretClose').onclick = () => { $('#secret').hidden = true; };
+
+  // ---------- 화면 전환 ----------
+  let cleanup = null;
+  function go(game) {
+    if (cleanup) { cleanup(); cleanup = null; }
+    $('#secret').hidden = true;
+    const view = $('#view');
+    view.innerHTML = '';
+    window.scrollTo(0, 0);
+    if (!game) {
+      title.textContent = '파티 게임';
+      $('#back').classList.add('off');
+      home(view);
+    } else {
+      title.textContent = game.name;
+      $('#back').classList.remove('off');
+      cleanup = game.play(view, () => go(game)) || null;
+    }
+  }
+  $('#back').onclick = () => go(null);
+
+  // ---------- 홈 ----------
+  const ICONS = {
+    lots: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="10" height="15" rx="2"/><rect x="12" y="7" width="10" height="15" rx="2" fill="var(--soft)"/></svg>',
+    bomb: '<svg viewBox="0 0 26 26" fill="currentColor"><circle cx="12" cy="15" r="8"/><path d="M16 7l3-3" stroke="currentColor" stroke-width="2"/></svg>',
+    pirate: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="13" cy="16" rx="9" ry="7"/><path d="M8 9c1-4 9-4 10 0"/></svg>',
+    dice: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="17" cy="17" r="1.5" fill="currentColor"/><circle cx="13" cy="13" r="1.5" fill="currentColor"/></svg>',
+    ladder: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3v20M19 3v20M7 9h12M7 16h12"/></svg>',
+    pinball: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="7" r="3" fill="currentColor"/><circle cx="7" cy="15" r="1.5"/><circle cx="19" cy="15" r="1.5"/><circle cx="13" cy="20" r="1.5"/></svg>',
+    roulette: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="14" r="9"/><path d="M13 5v18M4 14h18"/><path d="M13 2l-2 3h4z" fill="currentColor"/></svg>',
+    bottle: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 3h4v5l2 3v12H9V11l2-3z"/></svg>',
+  };
+  function home(view) {
+    const list = h('div', { class: 'players' });
+    function renderPlayers() {
+      list.innerHTML = '';
+      players.forEach((p, i) => {
+        const inp = h('input', { type: 'text', id: `p-${i}`, value: p, placeholder: `참가자${i + 1}`, maxlength: 10 });
+        inp.oninput = () => { players[i] = inp.value; savePlayers(); };
+        const x = h('button', { class: 'x', type: 'button', 'aria-label': '빼기', disabled: players.length <= 2 }, '×');
+        x.onclick = () => { players.splice(i, 1); savePlayers(); renderPlayers(); syncRig(); };
+        list.append(h('div', { class: 'prow' }, inp, x));
+      });
+      if (players.length < 12) {
+        const add = h('button', { class: 'add', type: 'button' }, '+ 참가자 추가');
+        add.onclick = () => { players.push(''); savePlayers(); renderPlayers(); syncRig(); $(`#p-${players.length - 1}`).focus(); };
+        list.append(add);
+      }
+    }
+    renderPlayers();
+    const games = h('div', { class: 'games' });
+    GAMES.forEach((g) => {
+      const b = h('button', { class: 'game', type: 'button' },
+        h('span', { class: 'ic', html: ICONS[g.id] }),
+        h('span', null, h('b', null, g.name), h('small', null, g.desc)),
+        h('span', { class: 'go' }, '›'));
+      b.onclick = g.href ? () => { location.href = g.href; } : () => go(g);
+      games.append(b);
+    });
+    view.append(h('section', null, h('h2', null, `참가자 ${players.length}명`), list), h('section', null, h('h2', null, '게임'), games));
+  }
+
+  // ---------- 1. 제비뽑기 ----------
+  // 공정: 당첨 카드를 미리 하나 정해 둔다. 몰래: 카드는 정해 두지 않고, 대상이 뒤집는
+  // 카드가 당첨, 나머지는 전부 꽝이 된다(사람 수만큼 카드라서 대상은 반드시 한 장 뒤집는다).
+  function lots(view, again) {
+    const N = names(), n = N.length, target = takeTarget();
+    const winCard = randInt(0, n - 1);
+    const order = shuffle([...Array(n).keys()]);
+    let turn = 0, loser = null;
+    const msg = h('p', { class: 'msg' });
+    const grid = h('div', { class: 'cards' });
+    const foot = h('div');
+    const setMsg = () => { msg.textContent = `${N[order[turn]]} 차례`; };
+    for (let i = 0; i < n; i++) {
+      const c = h('button', { class: 'card', type: 'button', 'aria-label': `${i + 1}번 카드` }, String(i + 1));
+      c.onclick = () => {
+        if (c.classList.contains('open') || turn >= n) return;
+        const who = order[turn];
+        const win = target == null ? i === winCard : who === target;
+        if (win) loser = who;
+        c.classList.add('open'); if (win) c.classList.add('win');
+        c.innerHTML = '';
+        c.append(h('span', null, h('b', null, win ? '당첨' : '꽝'), h('small', null, N[who])));
+        turn++;
+        if (turn < n) setMsg();
+        else { msg.textContent = `${N[loser]} 당첨`; msg.classList.add('bad'); foot.append(h('button', { class: 'btn primary', type: 'button', onclick: again }, '다시 하기')); }
+      };
+      grid.append(c);
+    }
+    setMsg();
+    view.append(h('p', { class: 'sub' }, '이름이 나온 사람이 카드를 한 장씩 골라요'), msg, grid, foot);
+  }
+
+  // ---------- 2. 폭탄 돌리기 ----------
+  // 공정: 10~30초 사이 아무 때나 터진다. 몰래: 최소 8~15초가 지난 뒤, 대상이 들고 있을 때만
+  // 0.5~2.2초 들고 있으면 터진다(바로 넘기면 다음 차례로 미뤄짐).
+  function bomb(view, again) {
+    const N = names(), n = N.length, target = takeTarget();
+    let holder = randInt(0, n - 1), start = 0, timer = null, armAt = null;
+    const fuse = rand(10000, 30000), minT = rand(8000, 15000);
+    const ball = h('div', { class: 'bomb idle' });
+    const who = h('p', { class: 'holder' }, N[holder]);
+    const msg = h('p', { class: 'sub' }, '폰을 들고 있는 사람');
+    const btn = h('button', { class: 'btn primary', type: 'button' }, '시작');
+    function tick() {
+      const t = Date.now() - start;
+      const left = target == null ? Math.max(0.2, 1 - t / fuse) : Math.max(0.25, 1 - t / (minT + 12000));
+      ball.style.setProperty('--speed', `${(0.25 + left * 0.85).toFixed(2)}s`);
+      let boom = false;
+      if (target == null) boom = t >= fuse;
+      else if (t >= minT && holder === target) {
+        if (armAt == null) armAt = Date.now() + rand(500, 2200);
+        boom = Date.now() >= armAt;
+      }
+      if (boom) {
+        clearInterval(timer); timer = null;
+        ball.classList.add('boom');
+        if (navigator.vibrate) try { navigator.vibrate([200, 80, 300]); } catch (e) {}
+        who.textContent = `${N[holder]} 걸림`; who.style.color = 'var(--bad)';
+        msg.textContent = '펑!';
+        btn.textContent = '다시 하기'; btn.onclick = again;
+      }
+    }
+    btn.onclick = () => {
+      if (!timer && !start) {
+        start = Date.now(); ball.classList.remove('idle');
+        timer = setInterval(tick, 80);
+        btn.textContent = '넘기기';
+        msg.textContent = '다음 사람에게 넘기세요';
+        return;
+      }
+      if (!timer) return;
+      holder = (holder + 1) % n; armAt = null;
+      who.textContent = N[holder];
+    };
+    view.append(h('div', { class: 'bombwrap' }, ball), who, msg, btn);
+    return () => clearInterval(timer);
+  }
+
+  // ---------- 3. 해적 룰렛 ----------
+  // 공정: 함정 구멍 하나를 미리 정한다. 몰래: 함정은 없고, 대상이 1번째(50%) 또는 2번째에
+  // 찌르는 순간 튀어나온다. 구멍은 2n+4개라 대상이 두 번 찌를 차례가 오기 전에 모자라지 않는다.
+  function pirate(view, again) {
+    const N = names(), n = N.length, target = takeTarget();
+    const slots = Math.max(12, 2 * n + 4), trap = randInt(0, slots - 1);
+    const popOn = Math.random() < 0.5 ? 1 : 2;
+    let turn = randInt(0, n - 1), stabs = 0, over = false;
+    const msg = h('p', { class: 'msg' }, `${N[turn]} 차례`);
+    const head = h('div', { class: 'pirate' });
+    const barrel = h('div', { class: 'barrel' }, h('div', { class: 'body' }), head);
+    const foot = h('div');
+    for (let i = 0; i < slots; i++) {
+      const a = (i / slots) * Math.PI * 2 - Math.PI / 2;
+      const s = h('button', { class: 'slot', type: 'button', 'aria-label': `${i + 1}번 구멍`, style: `left:${50 + 40 * Math.cos(a)}%;top:${50 + 40 * Math.sin(a)}%` });
+      s.onclick = () => {
+        if (over || s.classList.contains('used')) return;
+        s.classList.add('used');
+        let pop;
+        if (target == null) pop = i === trap;
+        else if (turn === target) { stabs++; pop = stabs >= popOn; }
+        else pop = false;
+        if (pop) {
+          over = true; head.classList.add('up');
+          if (navigator.vibrate) try { navigator.vibrate(250); } catch (e) {}
+          msg.textContent = `${N[turn]} 걸림`; msg.classList.add('bad');
+          foot.append(h('button', { class: 'btn primary', type: 'button', onclick: again }, '다시 하기'));
+        } else {
+          turn = (turn + 1) % n; msg.textContent = `${N[turn]} 차례`;
+        }
+      };
+      barrel.append(s);
+    }
+    view.append(h('p', { class: 'sub' }, '돌아가며 칼을 꽂아요. 해적이 튀어나오면 걸려요'), barrel, msg, foot);
+  }
+
+  // ---------- 4. 주사위 꼴찌 ----------
+  // 공정: 그냥 굴린다. 꼴찌가 여럿이면 그 사람들만 다시 굴린다. 몰래: 기준값 F(5~7)를 정해
+  // 대상은 2~F-1, 나머지는 F+1~12만 나온다 — 대상이 혼자 꼴찌가 된다.
+  const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  function dieEl(v) {
+    const d = h('div', { class: 'die' + (v ? '' : ' blank') });
+    for (let k = 0; k < 9; k++) d.append(h('i', { class: v && PIPS[v].includes(k) ? 'on' : '' }));
+    return d;
+  }
+  function pairFor(sum) { const lo = Math.max(1, sum - 6), hi = Math.min(6, sum - 1); const a = randInt(lo, hi); return [a, sum - a]; }
+  function dice(view, again) {
+    const N = names(), n = N.length, target = takeTarget();
+    const F = randInt(5, 7);
+    let round = [...Array(n).keys()], idx = 0, rolling = false, timer = null;
+    const res = Array(n).fill(null);
+    const rows = h('div', { class: 'rolls' });
+    const msg = h('p', { class: 'msg' });
+    const btn = h('button', { class: 'btn primary', type: 'button' }, '굴리기');
+    function draw(live) {
+      rows.innerHTML = '';
+      N.forEach((name, i) => {
+        const r = live && live.i === i ? live.v : res[i];
+        const row = h('div', { class: 'rrow' + (round[idx] === i && !rolling && idx < round.length ? ' cur' : '') },
+          h('b', null, name), dieEl(r ? r[0] : 0), dieEl(r ? r[1] : 0), h('span', { class: 'sum' }, r ? r[0] + r[1] : ''));
+        row.dataset.i = i; rows.append(row);
+      });
+    }
+    function finalFor(i) {
+      if (target == null) return [randInt(1, 6), randInt(1, 6)];
+      return pairFor(i === target ? randInt(2, F - 1) : randInt(F + 1, 12));
+    }
+    function nextMsg() { msg.textContent = idx < round.length ? `${N[round[idx]]} 차례` : ''; }
+    btn.onclick = () => {
+      if (rolling || idx >= round.length) return;
+      rolling = true; btn.disabled = true;
+      const i = round[idx], t0 = Date.now();
+      timer = setInterval(() => {
+        if (Date.now() - t0 < 700) { draw({ i, v: [randInt(1, 6), randInt(1, 6)] }); return; }
+        clearInterval(timer); timer = null;
+        res[i] = finalFor(i); idx++; rolling = false; btn.disabled = false;
+        if (idx >= round.length) {
+          const sums = round.map((k) => res[k][0] + res[k][1]);
+          const min = Math.min(...sums);
+          const low = round.filter((k, j) => sums[j] === min);
+          if (low.length > 1) {
+            round = low; idx = 0;
+            msg.textContent = `${low.map((k) => N[k]).join(', ')} 동점 · 다시 굴려요`;
+            low.forEach((k) => { res[k] = null; });
+            draw(); return;
+          }
+          draw();
+          rows.querySelector(`[data-i="${low[0]}"]`).classList.add('low');
+          msg.textContent = `${N[low[0]]} 꼴찌`; msg.classList.add('bad');
+          btn.textContent = '다시 하기'; btn.onclick = again;
+          return;
+        }
+        draw(); nextMsg();
+      }, 70);
+    };
+    draw(); nextMsg();
+    view.append(h('p', { class: 'sub' }, '두 개 합이 제일 낮은 사람이 걸려요'), rows, msg, btn);
+    return () => clearInterval(timer);
+  }
+
+  // ---------- 5. 병 돌리기 ----------
+  // 공정: 아무 이름에나 멈춘다. 몰래: 대상 이름 칸 안쪽(가운데에서 조금씩 벗어나게)에 멈춘다.
+  function bottle(view, again) {
+    const N = names(), n = N.length;
+    let angle = 0, spinning = false;
+    const ring = h('div', { class: 'ring' }, h('div', { class: 'disc' }));
+    const tags = N.map((name, i) => {
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+      const t = h('span', { class: 'nm', style: `left:${50 + 44 * Math.cos(a)}%;top:${50 + 44 * Math.sin(a)}%` }, name);
+      ring.append(t); return t;
+    });
+    const btl = h('button', { class: 'bottle', type: 'button', 'aria-label': '병 돌리기', html:
+      '<svg viewBox="0 0 46 190"><path d="M17 4h12v40c0 6 13 14 13 30v104a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8V74c0-16 13-24 13-30z" fill="#2e8b57" opacity=".9"/><rect x="15" y="0" width="16" height="10" rx="3" fill="#c9a227"/><rect x="9" y="100" width="28" height="44" rx="4" fill="#f4efe1"/></svg>' });
+    ring.append(btl);
+    const msg = h('p', { class: 'msg' });
+    const btn = h('button', { class: 'btn primary', type: 'button' }, '돌리기');
+    function spin() {
+      if (spinning) return;
+      spinning = true; btn.disabled = true; msg.textContent = ''; msg.classList.remove('bad');
+      tags.forEach((t) => t.classList.remove('hit'));
+      const target = takeTarget();
+      const pick = target == null ? randInt(0, n - 1) : target;
+      const sector = 360 / n;
+      const want = pick * sector + rand(-0.32, 0.32) * sector;           // 병 입구(위쪽)가 가리킬 각도
+      const cur = ((angle % 360) + 360) % 360;
+      angle += 360 * randInt(4, 7) + ((want - cur + 360) % 360);
+      const dur = rand(4.2, 5.6);
+      btl.style.transition = `transform ${dur}s cubic-bezier(.12,.62,.08,1)`;
+      btl.style.transform = `rotate(${angle}deg)`;
+      setTimeout(() => {
+        spinning = false; btn.disabled = false;
+        tags[pick].classList.add('hit');
+        msg.textContent = `${N[pick]} 걸림`; msg.classList.add('bad');
+        btn.textContent = '다시 돌리기';
+      }, dur * 1000 + 80);
+    }
+    btl.onclick = spin; btn.onclick = spin;
+    view.append(ring, msg, btn);
+  }
+
+  const GAMES = [
+    { id: 'lots', name: '제비뽑기', desc: '한 장씩 뒤집어서 당첨 찾기', play: lots },
+    { id: 'bomb', name: '폭탄 돌리기', desc: '언제 터질지 모르는 폭탄 넘기기', play: bomb },
+    { id: 'pirate', name: '해적 룰렛', desc: '칼 꽂다가 해적이 튀어나오면 걸림', play: pirate },
+    { id: 'dice', name: '주사위 꼴찌', desc: '두 개 합이 제일 낮으면 걸림', play: dice },
+    { id: 'bottle', name: '병 돌리기', desc: '병이 가리키는 사람이 걸림', play: bottle },
+    { id: 'ladder', name: '사다리 타기', desc: '이름과 결과를 적고 사다리 타기', href: 'ladder.html' },
+    { id: 'pinball', name: '핀볼 배틀로얄', desc: '공이 마지막까지 남으면 걸림', href: 'pinball.html' },
+    { id: 'roulette', name: '운명의 룰렛', desc: '돌림판이 멈춘 칸이 걸림', href: 'roulette.html' },
+  ];
+
+  syncRig();
+  go(null);
+})();
+</script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>

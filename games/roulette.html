@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>운명의 룰렛</title>
+<meta name="theme-color" content="#2f6bff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="파티 게임">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<style>
+  /* 레이아웃: 놀이공원 경품 휠 — 왼쪽에 놋쇠 테두리 휠과 딸깍이는 바늘, 오른쪽에 참가자 명단·설정·기록 */
+  :root {
+    --bg: #e9efec;
+    --surface: #f7faf8;
+    --ink: #16241f;
+    --muted: #5b6b65;
+    --line: #cbd7d1;
+    --brass: #b8862b;
+    --brass-hi: #e7c46c;
+    --accent: #cf432d;
+    --accent-ink: #ffffff;
+    --font-display: "Black Han Sans", "Malgun Gothic", sans-serif;
+    --font-body: "IBM Plex Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1916; --surface: #17241f; --ink: #e8efe9; --muted: #93a49d;
+      --line: #2a3a34; --brass: #c4953a; --brass-hi: #efcf7c; --accent: #e0573f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1916; --surface: #17241f; --ink: #e8efe9; --muted: #93a49d;
+    --line: #2a3a34; --brass: #c4953a; --brass-hi: #efcf7c; --accent: #e0573f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+    padding: 28px 16px 40px;
+    padding-top: calc(28px + env(safe-area-inset-top, 0px));
+  }
+  .page {
+    max-width: 980px; margin: 0 auto;
+    display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 32px; align-items: start;
+  }
+  @media (max-width: 760px) { .page { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+
+  header { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 6vw, 44px); letter-spacing: -0.01em; line-height: 1.1; text-wrap: balance; }
+  .sub { margin: 0; color: var(--muted); font-size: 14px; }
+  h1 { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  header { padding-left: 44px; }
+  .secret { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px; border: 1px solid rgba(128,128,128,.35); border-radius: 12px; }
+  .secret select { font: inherit; padding: 8px; border-radius: 8px; }
+  .secret label { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
+  .secret button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 0; cursor: pointer; }
+  .ver { grid-column: 1 / -1; text-align: center; color: var(--muted); font-size: 12px; opacity: .7; margin: 8px 0 0; user-select: none; -webkit-user-select: none; }
+  [hidden] { display: none !important; }
+
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 0; }
+  .wheel-box { position: relative; width: min(480px, 100%); aspect-ratio: 1; max-width: 100%; }
+  canvas#wheel { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  canvas#wheel.dragging { cursor: grabbing; }
+  .hint { margin: 0; font-size: 13px; color: var(--muted); min-height: 20px; text-align: center; transition: color .2s; }
+  .hint.warn { color: var(--accent); font-weight: 600; }
+
+  .result {
+    min-height: 52px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: clamp(24px, 5vw, 34px); text-align: center;
+  }
+  .result .name { color: var(--accent); }
+  .result.pop { animation: pop .45s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .result.idle { font-family: var(--font-body); font-size: 15px; color: var(--muted); }
+
+  .spin {
+    font-family: var(--font-display); font-size: 24px; letter-spacing: 0.04em;
+    min-width: 200px; padding: 14px 44px; border: 0; border-radius: 999px;
+    background: var(--accent); color: var(--accent-ink); cursor: pointer;
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 60%, #000);
+    transition: transform .08s, box-shadow .08s, opacity .2s, background .2s;
+  }
+  .spin:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 60%, #000); }
+  .spin:disabled { opacity: .45; cursor: default; }
+  .spin.stop { background: var(--ink); color: var(--bg); box-shadow: 0 4px 0 color-mix(in srgb, var(--ink) 60%, #000); }
+
+  aside { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); }
+  .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  textarea {
+    width: 100%; min-height: 176px; resize: vertical;
+    font: inherit; font-size: 16px; line-height: 1.7;
+    padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink);
+  }
+  textarea:disabled { opacity: .6; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .ghost {
+    font: inherit; font-size: 14px; font-weight: 600;
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line);
+    background: transparent; color: var(--ink); cursor: pointer;
+  }
+  .ghost:hover:not(:disabled) { border-color: var(--brass); }
+  .ghost:disabled { opacity: .45; cursor: default; }
+  .toggle[aria-pressed="false"] { color: var(--muted); }
+
+  .setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg button {
+    font: inherit; font-size: 13px; font-weight: 600; padding: 5px 12px; border: 0; border-radius: 999px;
+    background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid var(--brass-hi); outline-offset: 2px; }
+
+  ol.history { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  ol.history li { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; padding-bottom: 6px; border-bottom: 1px dashed var(--line); }
+  ol.history li:last-child { border-bottom: 0; padding-bottom: 0; }
+  ol.history .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); font-size: 14px; margin: 0; }
+
+  .nojs { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; border: 2px dashed var(--line); border-radius: 50%; color: var(--muted); font-size: 14px; }
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+  @media (prefers-reduced-motion: reduce) { .result.pop { animation: none; } }
+</style>
+</head>
+<body>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<a href="./" aria-label="게임 목록" style="position:fixed;z-index:50;left:calc(env(safe-area-inset-left,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 8px);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(128,128,128,.22);color:inherit;text-decoration:none;font-size:24px;line-height:1;font-family:system-ui,sans-serif">‹</a>
+<div class="page">
+  <header>
+    <h1>운명의 룰렛</h1>
+    <p class="sub">한 번 돌리면 끝. 다시 돌리기 없기.</p>
+  </header>
+  <section class="secret" id="secret" hidden>
+    <select id="rig-who" aria-label="대상"></select>
+    <label><input type="checkbox" id="rig-once" checked> 이번 판만</label>
+    <button type="button" id="rig-close">닫기</button>
+  </section>
+
+  <section class="stage">
+    <div class="wheel-box"><canvas id="wheel" aria-label="룰렛 휠. 손가락으로 튕겨서 돌릴 수 있어요"></canvas><p id="nojs" class="nojs">이 화면은 스크립트를 실행하지 않아서 룰렛이 안 떠요.<br>사파리나 크롬 같은 브라우저로 열어주세요.</p></div>
+    <p id="hint" class="hint">휠을 손가락으로 튕기거나 버튼을 누르세요</p>
+    <div id="result" class="result idle" aria-live="polite">누가 걸릴까요?</div>
+    <button id="spin" class="spin" type="button">돌리기</button>
+  </section>
+
+  <aside>
+    <div class="card">
+      <div class="card-head">
+        <label class="label" for="names">참가자</label>
+        <span id="count" class="count"></span>
+      </div>
+      <textarea id="names" spellcheck="false">민수
+지호
+서연</textarea>
+      <div class="row">
+        <button id="shuffle" class="ghost" type="button">순서 섞기</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="label">설정</span>
+      <div class="setting">
+        <span>회전 시간</span>
+        <div class="seg" role="group" aria-label="회전 시간">
+          <button type="button" data-speed="short" aria-pressed="false">짧게</button>
+          <button type="button" data-speed="normal" aria-pressed="true">보통</button>
+          <button type="button" data-speed="long" aria-pressed="false">길게</button>
+        </div>
+      </div>
+      <label class="check setting" for="remove"><span>당첨자는 명단에서 빼기</span><input id="remove" type="checkbox"></label>
+      <div class="row">
+        <button id="sound" class="ghost toggle" type="button" aria-pressed="true">소리 켜짐</button>
+        <button id="haptic" class="ghost toggle" type="button" aria-pressed="true" hidden>진동 켜짐</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="label">최근 당첨</span></div>
+      <ol id="history" class="history"></ol>
+      <p id="history-empty" class="empty">아직 돌린 기록이 없어요</p>
+    </div>
+  </aside>
+  <p class="ver" id="ver">v2.0</p>
+</div>
+
+<script>
+// 본 스크립트보다 먼저 실행: 본 스크립트가 문법 오류로 통째로 안 돌아도 오류 내용을 화면에 보여준다
+window.addEventListener('error', function (e) {
+  var msg = '오류: ' + (e.message || '알 수 없는 오류');
+  var h = document.getElementById('hint');
+  if (h) { h.textContent = msg; h.classList.add('warn'); }
+  var n = document.getElementById('nojs');
+  if (n) n.textContent = '룰렛 코드를 실행하다 오류가 났어요. 이 화면을 캡처해서 보내주세요. (' + msg + ')';
+});
+</script>
+<script>
+document.getElementById('nojs').remove();
+const TAU = Math.PI * 2;
+const SEGMENTS = [
+  ['#cf432d', '#fff'], ['#f0b243', '#2a1d05'], ['#2f6f8f', '#fff'], ['#6aa57a', '#0e2416'],
+  ['#7b4f9d', '#fff'], ['#e58aa0', '#3a0f1c'], ['#3b8a8a', '#fff'], ['#c9672c', '#fff'],
+];
+// 마찰(라디안/ms²). 작을수록 오래 돈다
+const FRICTION = { short: 1.2e-5, normal: 6e-6, long: 3.4e-6 };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canVibrate = typeof navigator.vibrate === 'function';
+
+const $ = id => document.getElementById(id);
+const canvas = $('wheel'), ctx = canvas.getContext('2d');
+const namesEl = $('names'), spinBtn = $('spin'), shuffleBtn = $('shuffle');
+const soundBtn = $('sound'), hapticBtn = $('haptic'), removeEl = $('remove');
+const resultEl = $('result'), countEl = $('count'), hintEl = $('hint');
+const historyEl = $('history'), historyEmpty = $('history-empty');
+
+let rotation = 0;          // 휠 회전각(라디안, 시계방향 +)
+let flap = 0, flapDir = 1; // 바늘이 핀에 튕긴 각도와 방향
+let lastPeg = 0;
+let spinning = false;
+let anim = null;           // 진행 중인 회전 {start, total, dir, duration, power, t0, target, f}
+let winnerIdx = null, winnerGlow = 0;
+let pendingRemove = null, removeTimer = null;
+let speedMode = 'normal';
+let soundOn = true, hapticOn = true;
+let audio = null, lastBuzz = 0;
+let loopRunning = false;
+
+const names = () => namesEl.value.split('\n').map(s => s.trim()).filter(Boolean);
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const mod = (a, m) => ((a % m) + m) % m;
+
+// ---------- 저장 (이 브라우저에서만) ----------
+function save() {
+  try { localStorage.setItem('roulette', JSON.stringify({ names: namesEl.value, speedMode, soundOn, hapticOn, remove: removeEl.checked })); } catch (e) {}
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem('roulette') || 'null');
+    if (!s) return;
+    if (typeof s.names === 'string' && s.names.trim()) namesEl.value = s.names;
+    if (FRICTION[s.speedMode]) speedMode = s.speedMode;
+    soundOn = s.soundOn !== false; hapticOn = s.hapticOn !== false; removeEl.checked = !!s.remove;
+  } catch (e) {}
+}
+
+// ---------- 그리기 ----------
+function colorFor(i, n) {
+  let k = i % SEGMENTS.length;
+  if (n > 1 && i === n - 1 && k === 0) k = 2;   // 마지막 칸이 첫 칸과 같은 색이 되지 않게
+  return SEGMENTS[k];
+}
+
+function fitCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const size = Math.round(canvas.clientWidth * dpr);
+  if (size && canvas.width !== size) { canvas.width = size; canvas.height = size; }
+  draw();
+}
+
+function draw() {
+  const list = names();
+  const n = Math.max(list.length, 1);
+  const arc = TAU / n;
+  const W = canvas.width, c = W / 2;
+  const R = c * 0.9, r = c * 0.8;   // R: 테두리 바깥, r: 판 반지름
+  const brass = css('--brass'), brassHi = css('--brass-hi'), ink = css('--ink'), font = css('--font-display');
+  ctx.clearRect(0, 0, W, W);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = c * 0.06; ctx.shadowOffsetY = c * 0.025;
+  const rim = ctx.createRadialGradient(c, c * 0.8, r, c, c, R);
+  rim.addColorStop(0, brassHi); rim.addColorStop(1, brass);
+  ctx.beginPath(); ctx.arc(c, c, R, 0, TAU); ctx.fillStyle = rim; ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(c, c);
+  ctx.rotate(rotation);
+  for (let i = 0; i < n; i++) {
+    const a0 = -Math.PI / 2 + i * arc;
+    const [fill, text] = list.length ? colorFor(i, n) : ['#9aa6a1', '#fff'];
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, r, a0, a0 + arc); ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    if (winnerIdx !== null && i !== winnerIdx) { ctx.fillStyle = `rgba(0,0,0,${0.42 * winnerGlow})`; ctx.fill(); }
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = c * 0.008; ctx.stroke();
+
+    const label = list[i] || '이름을 적어주세요';
+    let fs = Math.min(c * 0.11, c * 0.9 / Math.sqrt(n) * 0.42);
+    ctx.font = `${fs}px ${font}`;
+    const maxW = r * 0.62, w = ctx.measureText(label).width;
+    if (w > maxW) { fs *= maxW / w; ctx.font = `${fs}px ${font}`; }
+    ctx.save();
+    ctx.rotate(a0 + arc / 2);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = text;
+    ctx.fillText(label, r * 0.9, 0);
+    ctx.restore();
+  }
+  if (winnerIdx !== null && winnerGlow > 0) {
+    const a0 = -Math.PI / 2 + winnerIdx * arc;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, r - c * 0.01, a0, a0 + arc); ctx.closePath();
+    ctx.strokeStyle = `rgba(255,255,255,${0.95 * winnerGlow})`; ctx.lineWidth = c * 0.022; ctx.stroke();
+  }
+  const pegR = (r + R) / 2;
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + i * arc;
+    ctx.beginPath(); ctx.arc(Math.cos(a) * pegR, Math.sin(a) * pegR, c * 0.022, 0, TAU);
+    ctx.fillStyle = '#fdf6e3'; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = c * 0.005; ctx.stroke();
+  }
+  ctx.restore();
+
+  const hub = ctx.createRadialGradient(c - c * 0.03, c - c * 0.03, 0, c, c, c * 0.13);
+  hub.addColorStop(0, brassHi); hub.addColorStop(1, brass);
+  ctx.beginPath(); ctx.arc(c, c, c * 0.13, 0, TAU); ctx.fillStyle = hub; ctx.fill();
+  ctx.beginPath(); ctx.arc(c, c, c * 0.045, 0, TAU); ctx.fillStyle = ink; ctx.globalAlpha = .75; ctx.fill(); ctx.globalAlpha = 1;
+
+  ctx.save();
+  ctx.translate(c, c * 0.07);
+  ctx.rotate(-flap * flapDir);
+  ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = c * 0.02; ctx.shadowOffsetY = c * 0.01;
+  ctx.beginPath();
+  ctx.moveTo(-c * 0.05, 0);
+  ctx.quadraticCurveTo(0, -c * 0.07, c * 0.05, 0);
+  ctx.lineTo(0, c * 0.2);
+  ctx.closePath();
+  ctx.fillStyle = css('--accent'); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.beginPath(); ctx.arc(0, -c * 0.005, c * 0.018, 0, TAU); ctx.fillStyle = '#fdf6e3'; ctx.fill();
+  ctx.restore();
+}
+
+// 화면 갱신 루프: 바늘 복원, 당첨 칸 빛남
+function ensureLoop() {
+  if (loopRunning) return;
+  loopRunning = true;
+  const step = () => {
+    flap *= 0.8;
+    if (flap < 0.002) flap = 0;
+    if (winnerIdx !== null && winnerGlow < 1) winnerGlow = Math.min(1, winnerGlow + 0.06);
+    draw();
+    if (spinning || dragging || flap > 0 || (winnerIdx !== null && winnerGlow < 1)) requestAnimationFrame(step);
+    else loopRunning = false;
+  };
+  requestAnimationFrame(step);
+}
+
+// ---------- 소리·진동 ----------
+function initAudio() {
+  if (soundOn && !audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audio = null; } }
+  if (audio && audio.state === 'suspended') audio.resume();
+}
+
+function pegHit(speed, dir) {
+  flapDir = dir;
+  flap = Math.min(0.55, Math.max(flap, 0.18 + speed * 2.2));
+  const now = performance.now();
+  if (hapticOn && canVibrate && now - lastBuzz > 45) { lastBuzz = now; navigator.vibrate(speed > 0.25 ? 4 : 10); }
+  if (!soundOn || !audio) return;
+  const t = audio.currentTime;
+  const osc = audio.createOscillator(), g = audio.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(1500 + Math.random() * 300, t);
+  osc.frequency.exponentialRampToValueAtTime(500, t + 0.03);
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+  osc.connect(g).connect(audio.destination);
+  osc.start(t); osc.stop(t + 0.05);
+}
+
+function checkPeg(prevRot, arc) {
+  const peg = Math.floor(rotation / arc);
+  if (peg !== lastPeg) { lastPeg = peg; pegHit(Math.abs(rotation - prevRot), Math.sign(rotation - prevRot) || 1); }
+}
+
+function fanfare() {
+  if (!soundOn || !audio) return;
+  const t = audio.currentTime;
+  [659, 784, 1047].forEach((hz, i) => {
+    const osc = audio.createOscillator(), g = audio.createGain();
+    osc.type = 'square'; osc.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, t + i * 0.11);
+    g.gain.exponentialRampToValueAtTime(0.06, t + i * 0.11 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.11 + 0.18);
+    osc.connect(g).connect(audio.destination);
+    osc.start(t + i * 0.11); osc.stop(t + i * 0.11 + 0.2);
+  });
+  if (hapticOn && canVibrate) navigator.vibrate([30, 60, 30, 60, 80]);
+}
+
+// ---------- 결과 정하기 ----------
+// ---------- 몰래 설정: 제목 1초 꾹 ----------
+// 고른 이름이 당첨되는 칸에 멈춘다. 켜져 있는지는 맨 아래 버전 끝(v2.0 → v2.0.1)으로만 보인다.
+// (예전엔 이름이 "예훈"이면 무조건 당첨되게 코드에 박혀 있었는데, 이걸로 바꿨다)
+let rigName = null;
+function syncRig() {
+  const sel = $('rig-who'), list = names();
+  if (rigName && !list.includes(rigName)) rigName = null;
+  sel.innerHTML = '';
+  sel.add(new Option('끄기', ''));
+  list.forEach(n => sel.add(new Option(n, n)));
+  sel.value = rigName || '';
+  $('ver').textContent = rigName ? 'v2.0.1' : 'v2.0';
+}
+$('rig-who').addEventListener('change', e => { rigName = e.target.value || null; syncRig(); });
+$('rig-close').addEventListener('click', () => { $('secret').hidden = true; });
+{
+  const t = document.querySelector('header h1');
+  let timer;
+  t.addEventListener('pointerdown', () => { timer = setTimeout(() => { syncRig(); $('secret').hidden = false; }, 900); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => t.addEventListener(ev, () => clearTimeout(timer)));
+  t.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+function chooseTarget(list) {
+  if (rigName) {
+    const i = list.indexOf(rigName);
+    if (i >= 0) {
+      if ($('rig-once').checked) { rigName = null; syncRig(); }
+      return i;
+    }
+  }
+  return Math.floor(Math.random() * list.length);
+}
+
+// 칸 안에서 멈출 위치(0~1). 가끔은 경계 근처에 아슬아슬하게 멈춘다
+function chooseStopFraction() {
+  const roll = Math.random();
+  if (roll < 0.14) return 0.04 + Math.random() * 0.06;
+  if (roll < 0.26) return 0.90 + Math.random() * 0.06;
+  return 0.18 + Math.random() * 0.64;
+}
+
+// ---------- 회전 ----------
+// v: 시작 속도(라디안/ms, 부호 = 방향). 속도에 맞는 자연스러운 회전 거리를 구한 뒤
+// 그 근처에서 목표 칸에 멈추는 거리로 맞추고, 시작 속도가 이어지도록 시간을 정한다.
+function launch(v, opts = {}) {
+  const list = opts.list != null ? opts.list : names();
+  const n = list.length, arc = TAU / n;
+  const dir = Math.sign(v) || 1, speed = Math.abs(v);
+  const friction = FRICTION[speedMode] * (opts.brake || 1);
+  const target = opts.target != null ? opts.target : chooseTarget(list);
+  const f = opts.f != null ? opts.f : chooseStopFraction();
+  const theta = (target + f) * arc;
+
+  const minTurns = opts.minTurns != null ? opts.minTurns : 1.5;
+  const natural = Math.min(Math.max(speed * speed / (2 * friction), minTurns * TAU), 20 * TAU);
+  const need = mod(dir * (-theta - rotation), TAU);   // 목표 지점까지 가장 가까운 거리
+  let total = need + Math.round((natural - need) / TAU) * TAU;
+  while (total < minTurns * TAU) total += TAU;
+
+  const power = 2.3 + Math.random() * 0.5;
+  let duration = power * total / speed;
+  duration = reduceMotion ? 1400 : Math.min(Math.max(duration, opts.minDuration != null ? opts.minDuration : 2400), 14000);
+
+  anim = { start: rotation, total, dir, duration, power, t0: performance.now(), target, f, arc, list };
+  if (!spinning) beginSpinUI();
+  const myAnim = anim;
+  let prev = rotation;
+  lastPeg = Math.floor(rotation / arc);
+  ensureLoop();
+  const frame = now => {
+    if (anim !== myAnim) return;   // 멈춤 버튼으로 새 계획이 생기면 이 프레임은 끝
+    const t = Math.min((now - myAnim.t0) / myAnim.duration, 1);
+    rotation = myAnim.start + myAnim.dir * myAnim.total * (1 - Math.pow(1 - t, myAnim.power));
+    checkPeg(prev, arc);
+    prev = rotation;
+    if (t < 1) { requestAnimationFrame(frame); return; }
+    anim = null;
+    settle(myAnim, () => finish(myAnim.list[myAnim.target], myAnim.target));
+  };
+  requestAnimationFrame(frame);
+}
+
+// 멈춰를 누를 때까지 같은 속도로 계속 돈다. 결과는 멈춰를 누른 순간 정한다
+function freeSpin(v) {
+  const list = names();
+  const arc = TAU / list.length;
+  anim = { free: true, v, start: rotation, t0: performance.now(), arc, list };
+  if (!spinning) beginSpinUI();
+  setHint('멈춰! 버튼을 누르면 멈춰요');
+  const myAnim = anim;
+  let prev = rotation;
+  lastPeg = Math.floor(rotation / arc);
+  ensureLoop();
+  const frame = now => {
+    if (anim !== myAnim) return;   // 멈춤 버튼으로 감속이 시작되면 이 루프는 끝
+    rotation = myAnim.start + myAnim.v * (now - myAnim.t0);
+    checkPeg(prev, arc);
+    prev = rotation;
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+// 지금 속도 (라디안/ms)
+function currentVelocity() {
+  if (!anim) return 0;
+  if (anim.free) return anim.v;
+  const t = Math.min((performance.now() - anim.t0) / anim.duration, 1);
+  return anim.dir * anim.total * anim.power * Math.pow(1 - t, anim.power - 1) / anim.duration;
+}
+
+// 멈춤: 같은 결과를 유지한 채 더 빨리 감속
+function brake() {
+  if (!anim || !stopAllowed) return;
+  const v = currentVelocity();
+  if (Math.abs(v) < 0.004) return;   // 이미 거의 멈춤
+  stopAllowed = false;
+  spinBtn.disabled = true;
+  setHint('');
+  if (anim.free) { launch(v, { list: anim.list, brake: 1.6, minTurns: 0.8, minDuration: 1800 }); return; }
+  launch(v, { list: anim.list, target: anim.target, f: anim.f, brake: 3.2, minTurns: 0.6, minDuration: 1200 });
+}
+
+// 멈춘 뒤 바늘 반동으로 휠이 살짝 되돌아왔다가 자리 잡음 (칸을 넘지 않는 범위에서)
+function settle(a, done) {
+  const room = a.dir > 0 ? (1 - a.f) : a.f;
+  const amp = reduceMotion ? 0 : Math.min(0.018, room * a.arc * 0.45);
+  const final = rotation;
+  if (amp <= 0) { done(); return; }
+  const t0 = performance.now(), dur = 520;
+  const step = now => {
+    const t = Math.min((now - t0) / dur, 1);
+    rotation = final - a.dir * amp * Math.sin(Math.PI * t) * (1 - t * 0.6);
+    if (t < 1) requestAnimationFrame(step);
+    else { rotation = final; done(); }
+  };
+  requestAnimationFrame(step);
+}
+
+let stopAllowed = false;
+function beginSpinUI() {
+  spinning = true;
+  stopAllowed = true;
+  winnerIdx = null; winnerGlow = 0;
+  shuffleBtn.disabled = namesEl.disabled = true;
+  spinBtn.disabled = false;
+  spinBtn.textContent = '멈춰!';
+  spinBtn.classList.add('stop');
+  resultEl.className = 'result idle';
+  resultEl.textContent = '두근두근…';
+  setHint('');
+}
+
+function finish(winner, idx) {
+  spinning = false;
+  shuffleBtn.disabled = namesEl.disabled = false;
+  spinBtn.textContent = '다시 돌리기';
+  spinBtn.classList.remove('stop');
+  winnerIdx = idx; winnerGlow = 0;
+  ensureLoop();
+  resultEl.className = 'result';
+  void resultEl.offsetWidth;
+  resultEl.className = 'result pop';
+  resultEl.innerHTML = '';
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'name';
+  nameSpan.textContent = winner;
+  resultEl.append(nameSpan, ' 당첨!');
+  fanfare();
+  confetti();
+  addHistory(winner);
+  if (removeEl.checked) {
+    pendingRemove = winner;
+    removeTimer = setTimeout(applyPendingRemove, 2200);
+  }
+  updateCount();
+}
+
+function applyPendingRemove() {
+  clearTimeout(removeTimer);
+  if (!pendingRemove) return;
+  const lines = namesEl.value.split('\n');
+  const i = lines.findIndex(s => s.trim() === pendingRemove);
+  if (i >= 0) lines.splice(i, 1);
+  namesEl.value = lines.join('\n');
+  pendingRemove = null;
+  winnerIdx = null;
+  updateCount(); draw(); save();
+}
+
+function prepareSpin() {
+  applyPendingRemove();
+  if (names().length < 2) { setHint('참가자를 2명 이상 적어주세요', true); return false; }
+  winnerIdx = null; winnerGlow = 0;
+  initAudio();
+  return true;
+}
+
+function spinFromButton() {
+  if (spinning) { brake(); return; }
+  if (!prepareSpin()) return;
+  freeSpin(0.024 + Math.random() * 0.014);
+}
+
+// ---------- 손가락으로 튕기기 ----------
+let dragging = false, dragAngle = 0, samples = [];
+const angleAt = e => {
+  const r = canvas.getBoundingClientRect();
+  return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2));
+};
+
+canvas.addEventListener('pointerdown', e => {
+  if (spinning) return;   // 도는 중엔 휠 터치로 못 멈춤. 멈춰 버튼으로만
+  if (!prepareSpin()) return;
+  dragging = true;
+  canvas.classList.add('dragging');
+  canvas.setPointerCapture(e.pointerId);
+  dragAngle = angleAt(e);
+  samples = [{ t: performance.now(), rot: rotation }];
+  lastPeg = Math.floor(rotation / (TAU / names().length));
+  resultEl.className = 'result idle';
+  resultEl.textContent = '누가 걸릴까요?';
+  ensureLoop();
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const a = angleAt(e);
+  let d = a - dragAngle;
+  if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+  dragAngle = a;
+  const prev = rotation;
+  rotation += d;
+  checkPeg(prev, TAU / names().length);
+  const now = performance.now();
+  samples.push({ t: now, rot: rotation });
+  while (samples.length > 2 && now - samples[0].t > 90) samples.shift();
+});
+
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  canvas.classList.remove('dragging');
+  const now = performance.now();
+  const first = samples[0], last = samples[samples.length - 1];
+  let v = 0;
+  if (samples.length >= 2 && now - last.t < 70 && last.t - first.t > 8) v = (last.rot - first.rot) / (last.t - first.t);
+  const minSpeed = Math.sqrt(2 * FRICTION[speedMode] * 2 * TAU);   // 두 바퀴는 돌 만큼의 세기
+  if (Math.abs(v) < minSpeed) {
+    setHint(Math.abs(v) > 0.002 ? '조금 더 세게 튕겨주세요' : '휠을 손가락으로 튕기거나 버튼을 누르세요', Math.abs(v) > 0.002);
+    return;
+  }
+  freeSpin(Math.max(-0.05, Math.min(0.05, v)));
+}
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+
+function setHint(text, warn = false) {
+  hintEl.textContent = text;
+  hintEl.classList.toggle('warn', warn);
+}
+
+// ---------- 꽃가루 ----------
+const cf = $('confetti'), cfx = cf.getContext('2d');
+let pieces = [], cfRunning = false;
+function confetti() {
+  if (reduceMotion) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cf.width = innerWidth * dpr; cf.height = innerHeight * dpr;
+  const box = canvas.getBoundingClientRect();
+  const ox = (box.left + box.width / 2) * dpr, oy = (box.top + box.height * 0.3) * dpr;
+  for (let i = 0; i < 140; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;
+    const sp = (6 + Math.random() * 9) * dpr;
+    pieces.push({
+      x: ox, y: oy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      w: (6 + Math.random() * 6) * dpr, h: (3 + Math.random() * 4) * dpr,
+      rot: Math.random() * TAU, vr: (Math.random() - 0.5) * 0.4,
+      color: SEGMENTS[i % SEGMENTS.length][0], life: 1, dpr,
+    });
+  }
+  if (!cfRunning) { cfRunning = true; requestAnimationFrame(cfStep); }
+}
+function cfStep() {
+  cfx.clearRect(0, 0, cf.width, cf.height);
+  pieces = pieces.filter(p => p.life > 0 && p.y < cf.height + 40);
+  for (const p of pieces) {
+    p.vy += 0.32 * p.dpr; p.vx *= 0.985; p.vy *= 0.985;
+    p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= 0.006;
+    cfx.save(); cfx.translate(p.x, p.y); cfx.rotate(p.rot);
+    cfx.globalAlpha = Math.max(0, Math.min(1, p.life * 2));
+    cfx.fillStyle = p.color;
+    cfx.fillRect(-p.w / 2, -p.h / 2 * Math.abs(Math.cos(p.rot * 2)), p.w, p.h * Math.abs(Math.cos(p.rot * 2)) + 0.5);
+    cfx.restore();
+  }
+  if (pieces.length) requestAnimationFrame(cfStep);
+  else { cfRunning = false; cfx.clearRect(0, 0, cf.width, cf.height); }
+}
+
+// ---------- 기록·UI ----------
+function addHistory(winner) {
+  const li = document.createElement('li');
+  const who = document.createElement('span'); who.textContent = winner;
+  const when = document.createElement('span'); when.className = 't';
+  when.textContent = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  li.append(who, when);
+  historyEl.prepend(li);
+  while (historyEl.children.length > 6) historyEl.lastChild.remove();
+  historyEmpty.hidden = true;
+}
+
+function updateCount() {
+  const n = names().length;
+  countEl.textContent = n < 2 ? '2명 이상 적어주세요' : `${n}명`;
+  if (!spinning) {
+    spinBtn.disabled = n < 2;
+    if (n < 2 || winnerIdx === null) spinBtn.textContent = '돌리기';
+  }
+}
+
+function syncToggles() {
+  soundBtn.setAttribute('aria-pressed', String(soundOn));
+  soundBtn.textContent = soundOn ? '소리 켜짐' : '소리 꺼짐';
+  hapticBtn.setAttribute('aria-pressed', String(hapticOn));
+  hapticBtn.textContent = hapticOn ? '진동 켜짐' : '진동 꺼짐';
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.speed === speedMode)));
+}
+
+namesEl.addEventListener('input', () => {
+  pendingRemove = null; clearTimeout(removeTimer);
+  winnerIdx = null;
+  updateCount(); draw(); save();
+});
+shuffleBtn.addEventListener('click', () => {
+  applyPendingRemove();
+  const list = names();
+  for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }
+  namesEl.value = list.join('\n');
+  winnerIdx = null;
+  updateCount(); draw(); save();
+});
+soundBtn.addEventListener('click', () => { soundOn = !soundOn; syncToggles(); save(); });
+hapticBtn.addEventListener('click', () => { hapticOn = !hapticOn; syncToggles(); save(); });
+removeEl.addEventListener('change', save);
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { speedMode = b.dataset.speed; syncToggles(); save(); }));
+spinBtn.addEventListener('click', spinFromButton);
+
+hapticBtn.hidden = !canVibrate;
+load();
+syncToggles();
+new ResizeObserver(fitCanvas).observe(canvas);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+if (document.fonts) document.fonts.ready.then(draw);
+updateCount();
+fitCanvas();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>

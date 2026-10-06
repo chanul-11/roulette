@@ -71,6 +71,8 @@ button:disabled { opacity: 0.4; }
 .secret-colors button.on { border-color: #fff; }
 .secret-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 14px; color: #bbb; }
 #setup-screen { padding-top: 56px; }
+#game-screen { padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
+#drop-btn { margin-left: 48px; width: calc(100% - 48px); }
 #result-screen { text-align: center; padding-top: 80px; }
 #result-text { font-size: 28px; margin-bottom: 24px; }
 
@@ -346,8 +348,7 @@ window.PinballApp = window.PinballApp || {};
   const { Engine, Render, Runner, Bodies, Composite, Body, Events, Constraint } = window.Matter;
 
   const WIDTH = 440;
-  const VIEWPORT_HEIGHT = 640; // 화면에 항상 보이는 고정 크기 (카메라 창)
-  const WORLD_HEIGHT = 10000; // 실제 보드 길이 (카메라가 이 안을 훑고 지나감) — 평균 1~1.5분 목표로 늘림
+  const WORLD_HEIGHT = 7500; // 실제 보드 길이 (카메라가 이 안을 훑고 지나감) — 한 판 60~70초 목표
   const FLOOR_Y = WORLD_HEIGHT - 20;
   const LEFT_X = 120;
   const CENTER_X = WIDTH / 2;
@@ -356,9 +357,9 @@ window.PinballApp = window.PinballApp || {};
   const STUCK_TIMEOUT_MS = 3000; // 이 시간 동안 바닥 쪽으로 전혀 못 내려가면 "진짜 갇힌 것"으로 보고 좌우로 살짝 흔든다
   const REST_SPEED_THRESHOLD = 0.4;
   const REST_TICKS_BEFORE_SETTLE = 18;
-  const HURRY_START_MS = 60000;
-  const HURRY_RAMP_MS = 15000;
-  const HURRY_FORCE = 0.0004;
+  const HURRY_START_MS = 45000;
+  const HURRY_RAMP_MS = 8000;
+  const HURRY_FORCE = 0.0009;
   const EARLY_HURRY_RAMP_MS = 20000;
   const EARLY_HURRY_FORCE = 0.0005;
   const FEW_BALLS_THRESHOLD = 3;
@@ -372,7 +373,10 @@ window.PinballApp = window.PinballApp || {};
   const TICK_MS = 1000 / 60;
 
   const BUMPER_RADIUS = 14;
-  const BUMPER_CLEARANCE = BUMPER_RADIUS + 5 + 6;
+  // 범퍼 옆 못과의 틈이 공 지름(24)보다 좁으면 공이 범퍼와 못 사이 홈에 올라앉아 30초 넘게
+  // 못 빠져나왔다(실측: 판이 100초 넘게 늘어지던 원인). 공이 넉넉히 지나갈 만큼 못을 비운다.
+  const BALL_PASS_GAP = 30;
+  const BUMPER_CLEARANCE = BUMPER_RADIUS + 5 + BALL_PASS_GAP;
   const SPINNER_LENGTH = 70;
   const SPINNER_CLEARANCE = SPINNER_LENGTH / 2 + 4 + 5 + 6;
   const CROSS_ARM_LENGTH = 70;
@@ -392,7 +396,7 @@ window.PinballApp = window.PinballApp || {};
   // 5분의 4 지점 두 곳에 한꺼번에 여러 개(가로로 3개) 몰아서 배치한다.
   const MAGNET_CLUSTER_RATIOS = [2 / 5, 4 / 5];
 
-  const ZONE_SPACING = 300;
+  const ZONE_SPACING = 240;
   // 5단 십자 스피너 관문(GAUNTLET) 한 줄의 팔 길이는 CROSS_ARM_LENGTH(70) —
   // 인접한 줄의 세로 팔끼리 겹치지 않으려면 줄 간격이 그보다 확실히 커야
   // 한다(안 그러면 두 회전체가 서로 끼여 영원히 못 멈추는 공이 생긴다).
@@ -423,8 +427,8 @@ window.PinballApp = window.PinballApp || {};
   // 품질(길이/심심한 낙하 여부)은 정해진 실제 시간 예산 안에서만 개선을
   // 시도하고, 그 예산을 넘기면 그때까지 찾은 것 중 제일 나은 걸 바로 쓴다.
   const MAX_TICKS_PER_ATTEMPT = 8500; // 약 142초 — 이 안에 안 끝나면 그 판은 버리고 다시 시도
-  const MIN_DURATION_SEC = 55;
-  const MAX_DURATION_SEC = 95;
+  const MIN_DURATION_SEC = 60;
+  const MAX_DURATION_SEC = 70;
   const STRAIGHT_FALL_MIN_RANGE = 50; // 낙하 중 좌우로 이 정도도 안 흔들리면 "심심한 낙하"로 감점
   const STRAIGHT_FALL_WINDOW_TICKS = 90; // 약 1.5초 분량 구간에서 검사
   const STRAIGHT_FALL_MIN_Y_DROP = 200; // 이만큼 아래로 내려가는 동안 옆으로 안 흔들리면 감점 대상
@@ -542,6 +546,24 @@ window.PinballApp = window.PinballApp || {};
     });
 
     const obstacleClearances = [...bumperSpots, ...spinnerSpecs, ...crossSpinnerSpecs, ...magnetSpots];
+    // 벽 범프: 양쪽 벽에 WALL_BUMP_SPACING마다 반원 혹을 붙인다. 혹의 중심이 벽면
+    // 위에 있어서, 벽에 붙어 내려오는 공(중심이 벽에서 12px 안쪽)은 항상 혹의
+    // 안쪽 면에 맞고 가운데 쪽으로 튕겨 나간다. 좌우는 반 칸씩 엇갈려 배치한다.
+    // (혹 옆 못을 많이 비우면 벽 옆에 다시 통로가 생겨서, 바로 붙은 못만 뺀다.)
+    const wallBumpSpots = [];
+    for (let y = 200; y < FINALE_Y_START - 40; y += WALL_BUMP_SPACING) {
+      [[0, 0], [WIDTH, WALL_BUMP_SPACING / 2]].forEach(([x, shift]) => {
+        const by = y + shift;
+        if (by >= FINALE_Y_START - 40) return;
+        if (obstacleClearances.some((o) => Math.hypot(x - o.x, by - o.y) < o.clearance + WALL_BUMP_RADIUS)) return;
+        wallBumpSpots.push({ x, y: by, clearance: WALL_BUMP_RADIUS + 5 + 20 });
+      });
+    }
+    const wallBumps = wallBumpSpots.map(({ x, y }) =>
+      Bodies.circle(x, y, WALL_BUMP_RADIUS, { isStatic: true, restitution: 0.9, render: { fillStyle: '#e0e0e0' } })
+    );
+    obstacleClearances.push(...wallBumpSpots);
+
     const pegs = [];
     const rowSpacing = 60;
     const colSpacing = 40;
@@ -565,20 +587,6 @@ window.PinballApp = window.PinballApp || {};
         if (tooCloseToPoint || tooCloseToFunnel) continue;
         pegs.push(Bodies.circle(x, y, 5, { isStatic: true, render: { fillStyle: '#e0e0e0' } }));
       }
-    }
-
-    // 벽 범프: 양쪽 벽에 WALL_BUMP_SPACING마다 반원 혹을 붙인다. 혹의 중심이 벽면
-    // 위에 있어서, 벽에 붙어 내려오는 공(중심이 벽에서 12px 안쪽)은 항상 혹의
-    // 안쪽 면에 맞고 가운데 쪽으로 튕겨 나간다 — 벽과 혹 사이에 공이 끼일
-    // 주머니가 생기지 않는다. 좌우는 반 칸씩 엇갈려 배치한다.
-    const wallBumps = [];
-    for (let y = 200; y < FINALE_Y_START - 40; y += WALL_BUMP_SPACING) {
-      [[0, 0], [WIDTH, WALL_BUMP_SPACING / 2]].forEach(([x, shift]) => {
-        const by = y + shift;
-        if (by >= FINALE_Y_START - 40) return;
-        if (obstacleClearances.some((o) => Math.hypot(x - o.x, by - o.y) < o.clearance + WALL_BUMP_RADIUS)) return;
-        wallBumps.push(Bodies.circle(x, by, WALL_BUMP_RADIUS, { isStatic: true, restitution: 0.9, render: { fillStyle: '#e0e0e0' } }));
-      });
     }
 
     function createPinnedSpinner(x, y, bar, angularSpeed) {
@@ -669,7 +677,9 @@ window.PinballApp = window.PinballApp || {};
 
     Engine.update(world.engine, TICK_MS);
 
-    if (state.fewBallsSince === null && state.liveBalls.length <= FEW_BALLS_THRESHOLD) {
+    // "몇 개 안 남음" 재촉은 누군가 이미 빠진 뒤에만 건다 — 처음부터 3명 이하인 판은
+    // 시작하자마자 재촉이 걸려 25초 만에 끝났다.
+    if (state.fewBallsSince === null && state.finishOrder.length > 0 && state.liveBalls.length <= FEW_BALLS_THRESHOLD) {
       state.fewBallsSince = now;
     }
 
@@ -911,6 +921,12 @@ window.PinballApp = window.PinballApp || {};
           const trajectories = relabeled.trajectories;
 
           const display = buildWorld(relabeled.lineup);
+
+          // 카메라 창 높이를 화면에 남은 세로 공간에 맞춘다. 예전엔 440x640 고정이라
+          // 세로로 긴 폰에서는 판 아래 40%가 텅 비었다.
+          const boxW = containerEl.clientWidth || WIDTH;
+          const availH = window.innerHeight - containerEl.getBoundingClientRect().top - 12;
+          const viewH = Math.round(Math.max(520, Math.min(1200, (WIDTH * availH) / boxW)));
           const { engine, balls } = display;
 
           // 재생 화면에서는 공이 실제 물리에 반응하지 않고(isSensor) 매 틱
@@ -924,23 +940,34 @@ window.PinballApp = window.PinballApp || {};
           const render = Render.create({
             element: containerEl,
             engine,
-            options: { width: WIDTH, height: VIEWPORT_HEIGHT, wireframes: false, background: '#1a1a2e', hasBounds: true },
+            options: { width: WIDTH, height: viewH, wireframes: false, background: '#1a1a2e', hasBounds: true },
           });
-          render.bounds = { min: { x: 0, y: 0 }, max: { x: WIDTH, y: VIEWPORT_HEIGHT } };
+          render.bounds = { min: { x: 0, y: 0 }, max: { x: WIDTH, y: viewH } };
 
           const MINIMAP_WIDTH = 36;
           const minimapRender = Render.create({
             element: minimapEl,
             engine,
-            options: { width: MINIMAP_WIDTH, height: VIEWPORT_HEIGHT, wireframes: false, background: '#1a1a2e', hasBounds: true },
+            options: { width: MINIMAP_WIDTH, height: viewH, wireframes: false, background: '#1a1a2e', hasBounds: true },
           });
           minimapRender.bounds = { min: { x: 0, y: 0 }, max: { x: WIDTH, y: WORLD_HEIGHT } };
           Events.on(minimapRender, 'afterRender', () => {
             const ctx = minimapRender.context;
-            const scaleY = VIEWPORT_HEIGHT / WORLD_HEIGHT;
+            const scaleY = viewH / WORLD_HEIGHT;
             ctx.strokeStyle = '#ffeb3b';
             ctx.lineWidth = 2;
             ctx.strokeRect(0, render.bounds.min.y * scaleY, MINIMAP_WIDTH, (render.bounds.max.y - render.bounds.min.y) * scaleY);
+            // 미니맵에서는 공이 실제 비율대로면 1px이라 안 보인다 — 색 점을 크게 따로 찍는다.
+            const scaleX = MINIMAP_WIDTH / WIDTH;
+            liveBalls.forEach((b) => {
+              ctx.beginPath();
+              ctx.arc(b.position.x * scaleX, b.position.y * scaleY, 5, 0, Math.PI * 2);
+              ctx.fillStyle = COLOR_HEX[b.gameColor];
+              ctx.fill();
+              ctx.lineWidth = 1.5;
+              ctx.strokeStyle = '#ffffff';
+              ctx.stroke();
+            });
           });
 
           const runner = Runner.create();
@@ -951,11 +978,12 @@ window.PinballApp = window.PinballApp || {};
           let dropped = false;
           let ended = false;
           let replayTick = 0;
+          let dropAt = 0;
           let liveBalls = balls.slice();
 
-          let cameraY = VIEWPORT_HEIGHT / 2;
+          let cameraY = viewH / 2;
           Events.on(render, 'beforeRender', () => {
-            const half = VIEWPORT_HEIGHT / 2;
+            const half = viewH / 2;
             let targetY = cameraY;
             if (dropped && liveBalls.length > 0) {
               targetY = liveBalls.reduce((maxY, b) => Math.max(maxY, b.position.y), 0);
@@ -968,7 +996,7 @@ window.PinballApp = window.PinballApp || {};
 
           Events.on(engine, 'afterUpdate', () => {
             if (!dropped || ended) return;
-            replayTick += 1;
+            replayTick = Math.floor((performance.now() - dropAt) / TICK_MS);
 
             liveBalls.slice().forEach((ball) => {
               const pos = trajectories[ball.gameColor][replayTick];
@@ -987,6 +1015,7 @@ window.PinballApp = window.PinballApp || {};
           });
 
           handle.drop = function drop() {
+            dropAt = performance.now();
             dropped = true;
           };
 

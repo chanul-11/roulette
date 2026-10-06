@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>파티 게임</title>
-<meta name="theme-color" content="#2f6bff">
+<meta name="theme-color" content="#f6f3ea">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="파티 게임">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap">
 <style>
 :root {
   --bg: #ffffff;
@@ -128,6 +129,79 @@ main.in-game { min-height: calc(100dvh - 150px); justify-content: center; }
 .secret label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--muted); }
 .ver { text-align: center; color: var(--muted); font-size: 0.72rem; margin: 28px 0 0; user-select: none; -webkit-user-select: none; }
 @media (prefers-reduced-motion: reduce) { .bomb, .bomb::after, .card, .pirate { animation: none; transition: none; } }
+
+/* ===== 색종이 테마: 종이 바탕, 굵은 검은 테두리 + 비껴 찍힌 그림자, 게임마다 다른 색종이 ===== */
+:root, :root:not([data-theme="light"]), :root[data-theme="dark"] {
+  --bg: #f6f3ea; --soft: #ffffff; --ink: #1d1d1d; --muted: #5c5a52; --line: #1d1d1d;
+  --accent: #1d1d1d; --accent-ink: #ffcf3d; --bad: #ff4a2e;
+  --p1: #ff6b4a; --p2: #ffcf3d; --p3: #4dbbff; --p4: #63d47a; --p5: #c58cff; --p6: #ff8fb8; --p7: #ff9f43; --p8: #3dd6c6;
+  --cut: 2.5px solid var(--ink); --drop: 3px 3px 0 var(--ink);
+  --display: "Do Hyeon", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color-scheme: light;
+}
+body { background: var(--bg); }
+.bar { background: var(--bg); border-bottom: var(--cut); }
+.bar h1 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
+.back { font-weight: 700; }
+h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: var(--ink); }
+.prow input { background: #fff; border: var(--cut); border-radius: 4px; box-shadow: var(--drop); }
+.prow input:focus { border-color: var(--ink); background: #fffbe6; }
+.x { background: #fff; border: var(--cut); border-radius: 4px; box-shadow: var(--drop); color: var(--ink); }
+.add { border: 2.5px dashed var(--ink); color: var(--ink); background: transparent; border-radius: 4px; font-family: var(--display); font-size: 1.05rem; }
+.games { border-top: 0; gap: 12px; }
+.game { border: var(--cut); border-radius: 4px; box-shadow: var(--drop); padding: 12px 14px; transition: transform .1s, box-shadow .1s; }
+.game:active { transform: translate(3px, 3px) !important; box-shadow: none; }
+.game b { font-family: var(--display); font-weight: 400; font-size: 1.25rem; }
+.game small { color: var(--ink); opacity: .78; }
+.game .ic { background: #fff; border: var(--cut); border-radius: 50%; color: var(--ink); }
+.game .go { color: var(--ink); }
+.game:nth-child(8n+1) { background: var(--p1); transform: rotate(-1deg); }
+.game:nth-child(8n+2) { background: var(--p2); transform: rotate(.8deg); }
+.game:nth-child(8n+3) { background: var(--p3); transform: rotate(-.6deg); }
+.game:nth-child(8n+4) { background: var(--p4); transform: rotate(1deg); }
+.game:nth-child(8n+5) { background: var(--p5); transform: rotate(-.9deg); }
+.game:nth-child(8n+6) { background: var(--p6); transform: rotate(.6deg); }
+.game:nth-child(8n+7) { background: var(--p7); transform: rotate(-.7deg); }
+.game:nth-child(8n+8) { background: var(--p8); transform: rotate(.9deg); }
+.btn { border: var(--cut); border-radius: 4px; box-shadow: var(--drop); font-family: var(--display); font-weight: 400; font-size: 1.3rem; padding: 12px; background: #fff; color: var(--ink); transition: transform .08s, box-shadow .08s; }
+.btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none; }
+.btn.primary { background: var(--ink); color: var(--accent-ink); }
+.btn.again { background: #fff; color: var(--ink); border: var(--cut); }
+.msg { font-family: var(--display); font-weight: 400; font-size: 1.7rem; }
+.sub { color: var(--muted); }
+.holder { font-family: var(--display); font-weight: 400; font-size: 2.2rem; }
+/* 제비뽑기 카드 */
+.card { border: var(--cut); border-radius: 4px; box-shadow: var(--drop); color: var(--ink); font-family: var(--display); font-weight: 400; font-size: 1.9rem; }
+.card:nth-child(5n+1) { background: var(--p1); } .card:nth-child(5n+2) { background: var(--p2); } .card:nth-child(5n+3) { background: var(--p3); }
+.card:nth-child(5n+4) { background: var(--p4); } .card:nth-child(5n+5) { background: var(--p5); }
+.card.open { background: #fff; }
+.card.open b { font-family: var(--display); font-weight: 400; font-size: 1.4rem; }
+.card.win { background: var(--bad); color: #fff; }
+/* 폭탄 */
+.bomb { border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+.bomb::before { border: 2.5px solid var(--ink); }
+/* 해적 */
+.barrel .body { box-shadow: inset 0 0 0 6px var(--wood-dark), 0 0 0 3px var(--ink), 5px 5px 0 3px var(--ink); }
+.pirate { border: 2.5px solid var(--ink); }
+.slot { border: var(--cut); background: #fff; }
+.slot.used { background: #bfbab0; border-color: var(--ink); }
+/* 주사위 */
+.rolls { border-top: 0; gap: 8px; }
+.rrow { border: var(--cut); border-radius: 4px; background: #fff; padding: 8px 10px; box-shadow: var(--drop); }
+.rrow.cur { background: var(--p2); border-radius: 4px; }
+.rrow.low { background: var(--bad); }
+.rrow.low b, .rrow.low .sum { color: #fff; }
+.rrow b, .rrow .sum { font-family: var(--display); font-weight: 400; font-size: 1.15rem; }
+.die { border: 2px solid var(--ink); background: #fff; }
+/* 병 돌리기 */
+.ring .disc { background: var(--p3); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+.ring .nm { border: 2px solid var(--ink); border-radius: 4px; font-family: var(--display); font-weight: 400; font-size: 1rem; background: #fff; }
+.ring .nm:nth-of-type(5n+1) { background: var(--p2); } .ring .nm:nth-of-type(5n+2) { background: var(--p4); } .ring .nm:nth-of-type(5n+3) { background: var(--p6); }
+.ring .nm:nth-of-type(5n+4) { background: var(--p8); } .ring .nm:nth-of-type(5n+5) { background: var(--p7); }
+.ring .nm.hit { background: var(--bad); color: #fff; border-color: var(--ink); }
+/* 몰래 설정 */
+.secret { border: var(--cut); border-radius: 4px; background: #fff; box-shadow: var(--drop); }
+.secret select { border: var(--cut); border-radius: 4px; background: #fff; }
 </style>
 </head>
 <body>

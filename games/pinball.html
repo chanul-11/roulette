@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>핀볼 배틀로얄</title>
-<meta name="theme-color" content="#2f6bff">
+<meta name="theme-color" content="#f6f3ea">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="파티 게임">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
@@ -75,6 +76,26 @@ button:disabled { opacity: 0.4; }
 #drop-btn { margin-left: 48px; width: calc(100% - 48px); }
 #result-screen { text-align: center; padding-top: 80px; }
 #result-text { font-size: 28px; margin-bottom: 24px; }
+
+/* ===== 색종이 테마: 종이 바탕, 굵은 검은 테두리 + 비껴 찍힌 그림자 ===== */
+html, body { background: #f6f3ea; color: #1d1d1d; }
+h1, button, #result-text { font-family: "Do Hyeon", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; font-weight: 400; }
+h1 { font-size: 32px; }
+#participant-list input { background: #fff; border: 2.5px solid #1d1d1d; border-radius: 4px; box-shadow: 3px 3px 0 #1d1d1d; }
+.color-dot { border: 2px solid #1d1d1d; }
+button { background: #fff; color: #1d1d1d; border: 2.5px solid #1d1d1d; border-radius: 4px; box-shadow: 3px 3px 0 #1d1d1d; font-size: 20px; }
+button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none; }
+#start-btn, #drop-btn, #replay-btn { background: #1d1d1d; color: #ffcf3d; }
+#add-participant-btn { border-style: dashed; box-shadow: none; }
+.remove-participant-btn { background: #ff6b4a; color: #1d1d1d; font-size: 18px; box-shadow: 2px 2px 0 #1d1d1d; }
+#board-container canvas { border: 3px solid #1d1d1d; border-radius: 4px !important; box-shadow: 4px 4px 0 #1d1d1d; }
+#minimap-container canvas { border: 2.5px solid #1d1d1d; }
+#result-text { font-size: 36px; }
+.app-version { color: #8a867a; }
+.secret { border: 2.5px solid #1d1d1d; border-radius: 4px; background: #fff; box-shadow: 3px 3px 0 #1d1d1d; }
+.secret-colors button { background: #fff; border: 2px solid #1d1d1d; box-shadow: none; font-family: inherit; font-size: 14px; }
+.secret-colors button.on { background: #ffcf3d; border-color: #1d1d1d; }
+.secret-row { color: #5c5a52; }
 
 </style>
 </head>

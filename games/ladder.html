@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2f6bff">
+<meta name="theme-color" content="#f6f3ea">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="파티 게임">
@@ -12,7 +12,7 @@
 <title>사다리 타기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 /* 레이아웃: 일반 사다리 앱 방식 — 한 화면 안에 위 이름칸, 가운데 사다리(시작 전엔 가림), 아래 결과칸 */
 :root {
@@ -108,6 +108,39 @@ svg .trail.dim { opacity: .12; }
   svg.ladder { height: 280px; }
 }
 @media (prefers-reduced-motion: reduce) { .cover, svg .trail { transition: none; } .res.hit { animation: none; } }
+
+/* ===== 색종이 테마 ===== */
+:root, :root:not([data-theme="light"]), :root[data-theme="dark"] {
+  --bg: #f6f3ea; --surface: #f6f3ea; --ink: #1d1d1d; --muted: #5c5a52; --line: #1d1d1d;
+  --rail: #1d1d1d; --rung: #1d1d1d; --accent: #1d1d1d; --accent-ink: #ffcf3d; --bad: #ff4a2e; --cover: #ffcf3d;
+  --cut: 2.5px solid #1d1d1d; --drop: 3px 3px 0 #1d1d1d;
+  --display: "Do Hyeon", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color-scheme: light;
+}
+.topbar { background: var(--bg); border-bottom: var(--cut); }
+.topbar h1 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
+.card { box-shadow: none; }
+.count span { font-family: var(--display); font-size: 1.15rem; }
+.stepper button { border: var(--cut); background: #fff; box-shadow: 2px 2px 0 var(--ink); }
+.stepper output { font-family: var(--display); font-size: 1.2rem; }
+.num { border: 2px solid var(--ink); font-family: var(--display); font-weight: 400; font-size: .95rem; }
+.name, .res { background: #fff; border: 2px solid var(--ink); border-radius: 4px; }
+input.name:focus, input.res:focus { border-color: var(--ink); background: #fffbe6; }
+.name.static { border-color: transparent; background: transparent; font-family: var(--display); font-size: 1rem; }
+.res.static { font-family: var(--display); font-size: 1rem; }
+.res.hidden { background: #fff; color: var(--ink); }
+.res.bad { background: var(--bad); color: #fff; }
+svg .rail, svg .rung { stroke-width: 3.5; }
+.cover { background: repeating-linear-gradient(-45deg, #ffcf3d 0 14px, #ffbf00 14px 28px); border: var(--cut); border-radius: 4px; box-shadow: var(--drop); color: var(--ink); font-family: var(--display); }
+.btn { border: var(--cut); border-radius: 4px; box-shadow: var(--drop); font-family: var(--display); font-weight: 400; font-size: 1.25rem; background: #fff; color: var(--ink); }
+.btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none; }
+.btn.primary { background: var(--ink); color: var(--accent-ink); }
+.msg { font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
+.list h2 { font-family: var(--display); color: var(--ink); font-size: 1.15rem; }
+.item { border-top: 2px dashed var(--ink); }
+.item b, .item em { font-family: var(--display); font-weight: 400; font-size: 1.1rem; }
+.item .num { border: 2px solid var(--ink); }
+.secret { border: var(--cut); border-radius: 4px; background: #fff; box-shadow: var(--drop); }
 </style>
 
 </head>

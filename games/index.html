@@ -293,6 +293,16 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
   </header>
   <section class="secret" id="secret" hidden>
     <select id="rigWho" aria-label="대상"></select>
+    <select id="rigSpot" aria-label="위치" hidden>
+      <option value="">끄기</option>
+      <option value="top">위쪽 끝 손가락</option>
+      <option value="bottom">아래쪽 끝 손가락</option>
+      <option value="left">왼쪽 끝 손가락</option>
+      <option value="right">오른쪽 끝 손가락</option>
+      <option value="center">가운데에 가장 가까운 손가락</option>
+      <option value="first">제일 먼저 올린 손가락</option>
+      <option value="last">제일 늦게 올린 손가락</option>
+    </select>
     <label><input type="checkbox" id="rigOnce" checked> 이번 판만</label>
     <button class="btn" id="secretClose" type="button">닫기</button>
   </section>
@@ -341,7 +351,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 
   // ---------- 몰래 설정: 제목 1초 꾹 ----------
   // 고른 사람이 걸리게 한다. 켜져 있는지는 맨 아래 버전 끝(v3.0 → v3.0.1)으로만 보인다.
-  const rig = { who: null };
+  const rig = { who: null, spot: null };   // spot: 손가락 룰렛용 위치(사람 대신)
   function syncRig() {
     if (rig.who != null && rig.who >= players.length) rig.who = null;
     const sel = $('#rigWho');
@@ -349,9 +359,11 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     sel.add(new Option('끄기', ''));
     names().forEach((n, i) => sel.add(new Option(n, i)));
     sel.value = rig.who == null ? '' : String(rig.who);
-    $('#ver').textContent = rig.who == null ? 'v3.0' : 'v3.0.1';
+    $('#rigSpot').value = rig.spot || '';
+    $('#ver').textContent = rig.who == null && rig.spot == null ? 'v3.0' : 'v3.0.1';
   }
   $('#rigWho').onchange = (e) => { rig.who = e.target.value === '' ? null : +e.target.value; syncRig(); };
+  $('#rigSpot').onchange = (e) => { rig.spot = e.target.value || null; syncRig(); };
   // 몰래 설정은 게임이 결과를 정하는 순간마다 읽는다 — 게임 화면 안에서 제목을 꾹 눌러 정해도
   // 그 판에 바로 적용된다. "이번 판만"이면 실제로 그 사람이 걸린 뒤에 꺼진다.
   function currentTarget() { return rig.who != null && rig.who < players.length ? rig.who : null; }
@@ -371,6 +383,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     const view = $('#view');
     view.innerHTML = '';
     view.classList.toggle('in-game', !!game);
+    const fingerMode = !!game && game.id === 'finger';
+    $('#rigWho').hidden = fingerMode;
+    $('#rigSpot').hidden = !fingerMode;
     window.scrollTo(0, 0);
     if (!game) {
       title.textContent = '파티 게임';
@@ -764,7 +779,8 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 
   // ---------- 7. 손가락 룰렛 ----------
   // 모두 화면에 손가락을 올리고 2.5초 동안 그대로 있으면 한 명이 뽑힌다. 화면만으로는 누구 손가락인지
-  // 알 수 없어서 몰래 설정은 쓰지 않는다 — 진짜 무작위.
+  // 알 수 없어서, 몰래 설정은 사람 대신 위치(위/아래/왼쪽/오른쪽 끝, 가운데, 먼저/늦게 올린)로 고른다 —
+  // 폰을 탁자에 놓으면 대상이 어느 쪽에 앉았는지 알 수 있으니까.
   function finger(view, again) {
     const pad = h('div', { class: 'pad' });
     const hintEl = h('p', { class: 'padhint' }, '모두 손가락을 화면에 올려요');
@@ -807,7 +823,21 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
       if (dots.size < 2) return arm();
       done = true;
       const all = [...dots.values()];
-      const win = all[randInt(0, all.length - 1)];
+      const spot = rig.spot;
+      let win;
+      if (!spot) win = all[randInt(0, all.length - 1)];
+      else {
+        const r = pad.getBoundingClientRect();
+        const pos = (d) => ({ x: parseFloat(d.style.left), y: parseFloat(d.style.top) });
+        const score = {
+          top: (d) => pos(d).y, bottom: (d) => -pos(d).y, left: (d) => pos(d).x, right: (d) => -pos(d).x,
+          center: (d) => Math.hypot(pos(d).x - r.width / 2, pos(d).y - r.height / 2),
+        }[spot];
+        if (spot === 'first') win = all[0];
+        else if (spot === 'last') win = all[all.length - 1];
+        else win = all.reduce((best, d) => (score(d) < score(best) ? d : best));
+        if ($('#rigOnce').checked) { rig.spot = null; syncRig(); }
+      }
       all.forEach((d) => d.classList.add(d === win ? 'win' : 'lose'));
       hintEl.textContent = '';
       if (navigator.vibrate) try { navigator.vibrate(200); } catch (e) {}

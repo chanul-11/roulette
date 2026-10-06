@@ -214,13 +214,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 .keys button { font-family: var(--display); font-size: 1.6rem; padding: 11px 0; background: #fff; color: #1d1d1d; border: var(--cut); border-radius: 4px; box-shadow: var(--drop); cursor: pointer; }
 .keys button:active { transform: translate(3px, 3px); box-shadow: none; }
 .keys button.ok { background: var(--ink); color: var(--accent-ink); }
-/* 손가락 룰렛 */
-.pad { position: relative; height: min(60vh, 520px); border: var(--cut); border-radius: 4px; box-shadow: var(--drop); background: #fff; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; overflow: hidden; display: grid; place-items: center; }
-.padhint { color: #5c5a52; font-family: var(--display); font-size: 1.35rem; text-align: center; pointer-events: none; padding: 0 20px; margin: 0; }
-.fdot { position: absolute; width: 86px; height: 86px; margin: -43px 0 0 -43px; border-radius: 50%; border: 3px solid #1d1d1d; pointer-events: none; transition: transform .35s, opacity .35s; animation: fpulse 1s ease-in-out infinite; }
-.fdot.win { transform: scale(1.9); animation: none; box-shadow: 0 0 0 6px #fff, 0 0 0 9px #1d1d1d; }
-.fdot.lose { opacity: .12; transform: scale(.6); animation: none; }
-@keyframes fpulse { 50% { transform: scale(1.08); } }
 /* 악어 이빨 */
 .croc { position: relative; width: min(320px, 86vw); height: 250px; margin: 24px auto 0; }
 .croc .top { position: absolute; left: 0; right: 0; top: 0; height: 120px; background: #3fae57; border: 3px solid #1d1d1d; border-radius: 70px 70px 12px 12px; box-shadow: 4px 4px 0 #1d1d1d; transform-origin: 92% 100%; transform: rotate(-16deg); transition: transform .14s ease-in; z-index: 2; }
@@ -253,10 +246,10 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 .horse .tag { font-style: normal; font-family: var(--display); font-size: .8rem; min-width: 30px; text-align: center; padding: 1px 4px; border: 2px solid #1d1d1d; border-radius: 4px; color: #1d1d1d; }
 .place { position: absolute; right: 44px; top: 50%; transform: translateY(-50%); font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: #1d1d1d; z-index: 2; }
 @media (prefers-color-scheme: dark) {
-  .entry, .keys button, .pad, .lane2 { background-color: #f2ede0; }
+  .entry, .keys button, .lane2 { background-color: #f2ede0; }
   .keys button.ok { background: #ffcf3d; color: #1d1d1d; }
   .lane2.last { background: #ffb3a5; }
-  .croc .top, .croc .bottom, .lane2, .pad, .entry, .keys button { box-shadow: 3px 3px 0 #000; }
+  .croc .top, .croc .bottom, .lane2, .entry, .keys button { box-shadow: 3px 3px 0 #000; }
 }
 
 /* ===== 색종이 테마 · 다크 모드: 숯색 판 위에 색종이. 판 위 글씨는 분필색, 종이 위 글씨는 그대로 검정 ===== */
@@ -293,16 +286,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
   </header>
   <section class="secret" id="secret" hidden>
     <select id="rigWho" aria-label="대상"></select>
-    <select id="rigSpot" aria-label="위치" hidden>
-      <option value="">끄기</option>
-      <option value="top">위쪽 끝 손가락</option>
-      <option value="bottom">아래쪽 끝 손가락</option>
-      <option value="left">왼쪽 끝 손가락</option>
-      <option value="right">오른쪽 끝 손가락</option>
-      <option value="center">가운데에 가장 가까운 손가락</option>
-      <option value="first">제일 먼저 올린 손가락</option>
-      <option value="last">제일 늦게 올린 손가락</option>
-    </select>
     <label><input type="checkbox" id="rigOnce" checked> 이번 판만</label>
     <button class="btn" id="secretClose" type="button">닫기</button>
   </section>
@@ -351,7 +334,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 
   // ---------- 몰래 설정: 제목 1초 꾹 ----------
   // 고른 사람이 걸리게 한다. 켜져 있는지는 맨 아래 버전 끝(v3.0 → v3.0.1)으로만 보인다.
-  const rig = { who: null, spot: null };   // spot: 손가락 룰렛용 위치(사람 대신)
+  const rig = { who: null };
   function syncRig() {
     if (rig.who != null && rig.who >= players.length) rig.who = null;
     const sel = $('#rigWho');
@@ -359,11 +342,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     sel.add(new Option('끄기', ''));
     names().forEach((n, i) => sel.add(new Option(n, i)));
     sel.value = rig.who == null ? '' : String(rig.who);
-    $('#rigSpot').value = rig.spot || '';
-    $('#ver').textContent = rig.who == null && rig.spot == null ? 'v3.0' : 'v3.0.1';
+    $('#ver').textContent = rig.who == null ? 'v3.0' : 'v3.0.1';
   }
   $('#rigWho').onchange = (e) => { rig.who = e.target.value === '' ? null : +e.target.value; syncRig(); };
-  $('#rigSpot').onchange = (e) => { rig.spot = e.target.value || null; syncRig(); };
   // 몰래 설정은 게임이 결과를 정하는 순간마다 읽는다 — 게임 화면 안에서 제목을 꾹 눌러 정해도
   // 그 판에 바로 적용된다. "이번 판만"이면 실제로 그 사람이 걸린 뒤에 꺼진다.
   function currentTarget() { return rig.who != null && rig.who < players.length ? rig.who : null; }
@@ -383,9 +364,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     const view = $('#view');
     view.innerHTML = '';
     view.classList.toggle('in-game', !!game);
-    const fingerMode = !!game && game.id === 'finger';
-    $('#rigWho').hidden = fingerMode;
-    $('#rigSpot').hidden = !fingerMode;
     window.scrollTo(0, 0);
     if (!game) {
       title.textContent = '파티 게임';
@@ -409,7 +387,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     pinball: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="7" r="3" fill="currentColor"/><circle cx="7" cy="15" r="1.5"/><circle cx="19" cy="15" r="1.5"/><circle cx="13" cy="20" r="1.5"/></svg>',
     roulette: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="14" r="9"/><path d="M13 5v18M4 14h18"/><path d="M13 2l-2 3h4z" fill="currentColor"/></svg>',
     updown: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 11l5-5 5 5M8 15l5 5 5-5"/></svg>',
-    finger: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13V5a2 2 0 0 1 4 0v7l4 1a2 2 0 0 1 1.5 2.3L18 22h-8l-3.5-5.5a1.8 1.8 0 0 1 2.8-2.2z"/></svg>',
     croc: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h20v5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 12l2 3 2-3 2 3 2-3 2 3 2-3"/><circle cx="8" cy="7" r="2"/></svg>',
     melon: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="13" r="9"/><path d="M4 13c4 3 14 3 18 0M5 10c4 2 12 2 16 0"/></svg>',
     race: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22V4M4 5h12l-2 4 2 4H4"/></svg>',
@@ -777,78 +754,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     view.append(range, msg, hint, disp, keys, foot);
   }
 
-  // ---------- 7. 손가락 룰렛 ----------
-  // 모두 화면에 손가락을 올리고 2.5초 동안 그대로 있으면 한 명이 뽑힌다. 화면만으로는 누구 손가락인지
-  // 알 수 없어서, 몰래 설정은 사람 대신 위치(위/아래/왼쪽/오른쪽 끝, 가운데, 먼저/늦게 올린)로 고른다 —
-  // 폰을 탁자에 놓으면 대상이 어느 쪽에 앉았는지 알 수 있으니까.
-  function finger(view, again) {
-    const pad = h('div', { class: 'pad' });
-    const hintEl = h('p', { class: 'padhint' }, '모두 손가락을 화면에 올려요');
-    pad.append(hintEl);
-    const msg = h('p', { class: 'msg' });
-    const foot = h('div');
-    const dots = new Map();
-    let timer = null, done = false, colorIdx = 0;
-    const PAL = ['#ff6b4a', '#ffcf3d', '#4dbbff', '#63d47a', '#c58cff', '#ff8fb8', '#ff9f43', '#3dd6c6', '#e4572e', '#7b8cff'];
-    function arm() {
-      clearTimeout(timer);
-      if (done) return;
-      if (dots.size >= 2) { hintEl.textContent = '그대로 있어요…'; timer = setTimeout(pick, 2500); }
-      else hintEl.textContent = dots.size ? '한 명 더 올려요' : '모두 손가락을 화면에 올려요';
-    }
-    function place(dot, e) {
-      const r = pad.getBoundingClientRect();
-      dot.style.left = `${e.clientX - r.left}px`;
-      dot.style.top = `${e.clientY - r.top}px`;
-    }
-    pad.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      if (done) return;
-      const dot = h('div', { class: 'fdot', style: `background:${PAL[colorIdx++ % PAL.length]}` });
-      place(dot, e);
-      pad.append(dot);
-      dots.set(e.pointerId, dot);
-      arm();
-    });
-    pad.addEventListener('pointermove', (e) => { const d = dots.get(e.pointerId); if (d && !done) place(d, e); });
-    const lift = (e) => {
-      const d = dots.get(e.pointerId);
-      if (!d || done) return;
-      d.remove(); dots.delete(e.pointerId); arm();
-    };
-    pad.addEventListener('pointerup', lift);
-    pad.addEventListener('pointercancel', lift);
-    pad.addEventListener('contextmenu', (e) => e.preventDefault());
-    function pick() {
-      if (dots.size < 2) return arm();
-      done = true;
-      const all = [...dots.values()];
-      const spot = rig.spot;
-      let win;
-      if (!spot) win = all[randInt(0, all.length - 1)];
-      else {
-        const r = pad.getBoundingClientRect();
-        const pos = (d) => ({ x: parseFloat(d.style.left), y: parseFloat(d.style.top) });
-        const score = {
-          top: (d) => pos(d).y, bottom: (d) => -pos(d).y, left: (d) => pos(d).x, right: (d) => -pos(d).x,
-          center: (d) => Math.hypot(pos(d).x - r.width / 2, pos(d).y - r.height / 2),
-        }[spot];
-        if (spot === 'first') win = all[0];
-        else if (spot === 'last') win = all[all.length - 1];
-        else win = all.reduce((best, d) => (score(d) < score(best) ? d : best));
-        if ($('#rigOnce').checked) { rig.spot = null; syncRig(); }
-      }
-      all.forEach((d) => d.classList.add(d === win ? 'win' : 'lose'));
-      hintEl.textContent = '';
-      if (navigator.vibrate) try { navigator.vibrate(200); } catch (e) {}
-      msg.textContent = '이 손가락이 걸림'; msg.classList.add('bad');
-      foot.append(againButton(again));
-    }
-    view.append(msg, pad, foot);
-    return () => clearTimeout(timer);
-  }
-
-  // ---------- 8. 악어 이빨 ----------
+  // ---------- 7. 악어 이빨 ----------
   // 돌아가며 이빨을 누르다가 무는 이빨을 누른 사람이 걸린다.
   // 공정: 누를 때마다 1/남은 이빨 수 확률. 몰래: 대상이 1번째(50%) 또는 2번째로 누를 때 문다.
   function croc(view, again) {
@@ -888,7 +794,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     view.append(h('p', { class: 'sub' }, '돌아가며 이빨을 하나씩 눌러요. 물리면 걸려요'), head, msg, foot);
   }
 
-  // ---------- 9. 고무줄 수박 ----------
+  // ---------- 8. 고무줄 수박 ----------
   // 돌아가며 고무줄을 하나씩 감는다. 수박이 터질 때 감은 사람이 걸린다.
   // 공정: n+2~3n+6번째 고무줄 사이 어딘가에서 터진다. 몰래: n+1~2n+1개가 감긴 뒤부터 대상 차례에만,
   // 그 구간에서 대상의 1번째(50%) 또는 2번째 차례에 터진다. 금 가는 모습은 두 경우 똑같이 감은 개수로만 정해진다.
@@ -967,7 +873,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     view.append(h('div', { class: 'melon-wrap' }, box), count, msg, btn);
   }
 
-  // ---------- 10. 경마 ----------
+  // ---------- 9. 경마 ----------
   // 각자 말 한 마리. 꼴찌로 들어온 말 주인이 걸린다. 말마다 구간별 속도가 다른 "달리기 기록"을 만들어
   // 그대로 재생한다. 공정: 기록을 무작위로 나눠 준다. 몰래: 가장 느린 기록을 대상 말에게 준다 —
   // 구간 속도가 들쭉날쭉해서 중간에는 대상 말이 앞서기도 한다.
@@ -1045,7 +951,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     { id: 'dice', name: '주사위 꼴찌', desc: '두 개 합이 제일 낮으면 걸림', play: dice },
     { id: 'bottle', name: '병 돌리기', desc: '병이 가리키는 사람이 걸림', play: bottle },
     { id: 'updown', name: '업다운 숫자 폭탄', desc: '1~100 폭탄 숫자를 부르면 걸림', play: updown },
-    { id: 'finger', name: '손가락 룰렛', desc: '다 같이 손가락 올리면 하나가 뽑힘', play: finger },
     { id: 'croc', name: '악어 이빨', desc: '이빨 누르다 물리면 걸림', play: croc },
     { id: 'melon', name: '고무줄 수박', desc: '고무줄 감다 수박 터지면 걸림', play: melon },
     { id: 'race', name: '경마', desc: '꼴찌로 들어온 말 주인이 걸림', play: race },

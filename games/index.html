@@ -408,7 +408,12 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
         const inp = h('input', { type: 'text', id: `p-${i}`, value: p, placeholder: `참가자${i + 1}`, maxlength: 10 });
         inp.oninput = () => { players[i] = inp.value; savePlayers(); };
         const x = h('button', { class: 'x', type: 'button', 'aria-label': '빼기', disabled: players.length <= 2 }, '×');
-        x.onclick = () => { players.splice(i, 1); savePlayers(); renderPlayers(); syncRig(); };
+        x.onclick = () => {
+          players.splice(i, 1);
+          // 몰래 설정은 순번으로 기억하므로, 앞사람이 빠지면 한 칸 당겨 같은 사람을 계속 가리키게 한다
+          if (rig.who != null) { if (rig.who === i) rig.who = null; else if (rig.who > i) rig.who--; }
+          savePlayers(); renderPlayers(); syncRig();
+        };
         list.append(h('div', { class: 'prow' }, inp, x));
       });
       if (players.length < 12) {

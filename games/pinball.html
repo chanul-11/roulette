@@ -230,15 +230,33 @@ function relabelForTarget(lineup, trajectories, finishOrder, targetColor) {
   return { lineup: newLineup, trajectories: newTraj };
 }
 
+// 참가자 색은 순번으로 정해져서, 앞사람이 빠지면 뒷사람 색이 한 칸씩 당겨진다. 몰래 설정 색도 같이
+// 당겨야 같은 사람을 계속 가리킨다(예전엔 다음 사람으로 넘어갔다).
+function targetAfterRemoval(colorOrder, targetColor, removedIndex) {
+  if (!targetColor) return null;
+  const idx = colorOrder.indexOf(targetColor);
+  if (idx === removedIndex) return null;
+  return idx > removedIndex ? colorOrder[idx - 1] : targetColor;
+}
+
+// 당첨(마지막까지 남은) 색. 몰래 설정이면 relabelForTarget이 목표 색을 마지막 자리로 맞바꿔 두므로 그 색,
+// 아니면 기록된 탈락 순서의 마지막. 재생 화면에서 공이 사라진 순서로 정하면, 화면이 꺼졌다 켜져
+// 한꺼번에 끝날 때 다른 공이 당첨으로 잡힐 수 있었다.
+function loserColor(finishOrder, targetColor) {
+  return targetColor || finishOrder[finishOrder.length - 1];
+}
+
 if (typeof window !== 'undefined') {
   window.PinballApp = window.PinballApp || {};
   window.PinballApp.isAcceptableFinish = isAcceptableFinish;
   window.PinballApp.isDoomed = isDoomed;
   window.PinballApp.relabelForTarget = relabelForTarget;
+  window.PinballApp.targetAfterRemoval = targetAfterRemoval;
+  window.PinballApp.loserColor = loserColor;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { isAcceptableFinish, isDoomed, relabelForTarget };
+  module.exports = { isAcceptableFinish, isDoomed, relabelForTarget, targetAfterRemoval, loserColor };
 }
 
 </script>
@@ -320,6 +338,7 @@ window.PinballApp.initSetupScreen = function initSetupScreen(rootEl, onStart) {
       removeBtn.setAttribute('aria-label', '참가자 삭제');
       removeBtn.addEventListener('click', () => {
         participants.splice(i, 1);
+        rigColor = window.PinballApp.targetAfterRemoval(COLOR_ORDER, rigColor, i);
         render();
       });
 
@@ -955,6 +974,7 @@ window.PinballApp = window.PinballApp || {};
           }
           const relabeled = window.PinballApp.relabelForTarget(lineup, run.trajectories, run.finishOrder, targetColor);
           const trajectories = relabeled.trajectories;
+          const finalColor = window.PinballApp.loserColor(run.finishOrder, targetColor);
 
           const display = buildWorld(relabeled.lineup);
 
@@ -1045,7 +1065,8 @@ window.PinballApp = window.PinballApp || {};
               Composite.remove(engine.world, ball);
               if (liveBalls.length === 0) {
                 ended = true;
-                setTimeout(() => onGameEnd({ name: ball.gameName, color: ball.gameColor }), 0);
+                const last = balls.find((b) => b.gameColor === finalColor) || ball;
+                setTimeout(() => onGameEnd({ name: last.gameName, color: last.gameColor }), 0);
               }
             });
           });

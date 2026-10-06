@@ -204,6 +204,61 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
 .secret { border: var(--cut); border-radius: 4px; background: #fff; box-shadow: var(--drop); }
 .secret select { border: var(--cut); border-radius: 4px; background: #fff; }
 
+/* ===== 새 게임 5종 (색종이 테마) ===== */
+/* 업다운 */
+.range { display: flex; justify-content: center; align-items: baseline; gap: 14px; font-family: var(--display); font-size: 3.2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.range i { font-style: normal; font-size: 2rem; color: var(--muted); }
+.range.boom span { color: var(--bad); font-size: 4.4rem; }
+.entry { align-self: center; min-width: 150px; text-align: center; font-family: var(--display); font-size: 2.3rem; background: #fff; color: #1d1d1d; border: var(--cut); border-radius: 4px; box-shadow: var(--drop); padding: 4px 18px; font-variant-numeric: tabular-nums; }
+.keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.keys button { font-family: var(--display); font-size: 1.6rem; padding: 11px 0; background: #fff; color: #1d1d1d; border: var(--cut); border-radius: 4px; box-shadow: var(--drop); cursor: pointer; }
+.keys button:active { transform: translate(3px, 3px); box-shadow: none; }
+.keys button.ok { background: var(--ink); color: var(--accent-ink); }
+/* 손가락 룰렛 */
+.pad { position: relative; height: min(60vh, 520px); border: var(--cut); border-radius: 4px; box-shadow: var(--drop); background: #fff; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; overflow: hidden; display: grid; place-items: center; }
+.padhint { color: #5c5a52; font-family: var(--display); font-size: 1.35rem; text-align: center; pointer-events: none; padding: 0 20px; margin: 0; }
+.fdot { position: absolute; width: 86px; height: 86px; margin: -43px 0 0 -43px; border-radius: 50%; border: 3px solid #1d1d1d; pointer-events: none; transition: transform .35s, opacity .35s; animation: fpulse 1s ease-in-out infinite; }
+.fdot.win { transform: scale(1.9); animation: none; box-shadow: 0 0 0 6px #fff, 0 0 0 9px #1d1d1d; }
+.fdot.lose { opacity: .12; transform: scale(.6); animation: none; }
+@keyframes fpulse { 50% { transform: scale(1.08); } }
+/* 악어 이빨 */
+.croc { position: relative; width: min(320px, 86vw); height: 250px; margin: 24px auto 0; }
+.croc .top { position: absolute; left: 0; right: 0; top: 0; height: 120px; background: #3fae57; border: 3px solid #1d1d1d; border-radius: 70px 70px 12px 12px; box-shadow: 4px 4px 0 #1d1d1d; transform-origin: 92% 100%; transform: rotate(-16deg); transition: transform .14s ease-in; z-index: 2; }
+.croc .eye { position: absolute; top: -14px; left: 26%; width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 3px solid #1d1d1d; }
+.croc .eye::after { content: ""; position: absolute; left: 10px; top: 8px; width: 10px; height: 14px; border-radius: 50%; background: #1d1d1d; }
+.croc .eye.r { left: auto; right: 30%; }
+.croc .bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 128px; background: #3fae57; border: 3px solid #1d1d1d; border-radius: 12px 12px 60px 60px; box-shadow: 4px 4px 0 #1d1d1d; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-content: flex-start; }
+.croc .bottom::before { content: ""; position: absolute; inset: 52px 22px 16px; border-radius: 0 0 40px 40px; background: #c9455a; border: 2.5px solid #1d1d1d; z-index: 0; }
+.tooth { position: relative; z-index: 1; width: 30px; height: 34px; padding: 0; background: #fff; border: 2.5px solid #1d1d1d; border-radius: 4px 4px 14px 14px; cursor: pointer; transition: transform .1s; }
+.tooth.down { transform: translateY(8px); background: #cfc9bd; cursor: default; }
+.croc.bite .top { transform: rotate(0) translateY(88px); }
+.croc.bite { animation: jolt .45s .14s; }
+/* 고무줄 수박 */
+.melon-wrap { display: grid; place-items: center; padding: 18px 0 4px; }
+.melon { width: 230px; height: 230px; transition: transform .15s; }
+.melon svg { width: 100%; height: 100%; overflow: visible; }
+.melon.shake { animation: wob .3s; }
+.melon.burst { animation: jolt .5s; }
+@keyframes jolt { 20%, 60% { translate: -7px 0; } 40%, 80% { translate: 7px 0; } }
+@keyframes wob { 25% { transform: var(--sq) rotate(-4deg); } 75% { transform: var(--sq) rotate(4deg); } }
+.bandcount { text-align: center; font-family: var(--display); font-size: 1.2rem; margin: 0; color: var(--muted); }
+/* 경마 */
+.track { display: flex; flex-direction: column; gap: 8px; }
+.lane2 { position: relative; height: 48px; border: var(--cut); border-radius: 4px; background: #fff; box-shadow: var(--drop); overflow: hidden; }
+.lane2::after { content: ""; position: absolute; right: 30px; top: 0; bottom: 0; width: 8px; background: repeating-linear-gradient(#1d1d1d 0 8px, #fff 8px 16px); }
+.lane2.last { background: #ffd2c9; }
+.lname { position: absolute; left: 40%; top: 50%; transform: translateY(-50%); font-style: normal; font-family: var(--display); font-size: 1.1rem; color: #1d1d1d; opacity: .22; }
+.horse { position: absolute; left: 4px; top: 50%; transform: translate(0, -50%); display: flex; align-items: center; gap: 2px; z-index: 1; }
+.horse span { display: inline-block; transform: scaleX(-1); font-size: 28px; line-height: 1; }
+.horse .tag { font-style: normal; font-family: var(--display); font-size: .8rem; min-width: 30px; text-align: center; padding: 1px 4px; border: 2px solid #1d1d1d; border-radius: 4px; color: #1d1d1d; }
+.place { position: absolute; right: 44px; top: 50%; transform: translateY(-50%); font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: #1d1d1d; z-index: 2; }
+@media (prefers-color-scheme: dark) {
+  .entry, .keys button, .pad, .lane2 { background-color: #f2ede0; }
+  .keys button.ok { background: #ffcf3d; color: #1d1d1d; }
+  .lane2.last { background: #ffb3a5; }
+  .croc .top, .croc .bottom, .lane2, .pad, .entry, .keys button { box-shadow: 3px 3px 0 #000; }
+}
+
 /* ===== 색종이 테마 · 다크 모드: 숯색 판 위에 색종이. 판 위 글씨는 분필색, 종이 위 글씨는 그대로 검정 ===== */
 @media (prefers-color-scheme: dark) {
   :root, :root:not([data-theme="light"]) { --bg: #24221f; --chalk: #f2ede0; --muted: #a9a397; --drop: 3px 3px 0 #000; --soft: #f2ede0; }
@@ -338,6 +393,11 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     ladder: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3v20M19 3v20M7 9h12M7 16h12"/></svg>',
     pinball: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="7" r="3" fill="currentColor"/><circle cx="7" cy="15" r="1.5"/><circle cx="19" cy="15" r="1.5"/><circle cx="13" cy="20" r="1.5"/></svg>',
     roulette: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="14" r="9"/><path d="M13 5v18M4 14h18"/><path d="M13 2l-2 3h4z" fill="currentColor"/></svg>',
+    updown: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 11l5-5 5 5M8 15l5 5 5-5"/></svg>',
+    finger: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13V5a2 2 0 0 1 4 0v7l4 1a2 2 0 0 1 1.5 2.3L18 22h-8l-3.5-5.5a1.8 1.8 0 0 1 2.8-2.2z"/></svg>',
+    croc: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h20v5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 12l2 3 2-3 2 3 2-3 2 3 2-3"/><circle cx="8" cy="7" r="2"/></svg>',
+    melon: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="13" r="9"/><path d="M4 13c4 3 14 3 18 0M5 10c4 2 12 2 16 0"/></svg>',
+    race: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22V4M4 5h12l-2 4 2 4H4"/></svg>',
     bottle: '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 3h4v5l2 3v12H9V11l2-3z"/></svg>',
   };
   function home(view) {
@@ -618,12 +678,342 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.1rem; color: va
     view.append(ring, msg, btn);
   }
 
+  // ---------- 6. 업다운 숫자 폭탄 ----------
+  // 1~100 사이 폭탄 숫자. 돌아가며 숫자를 부르면 업/다운으로 범위가 좁혀지고, 폭탄 숫자를 부른 사람이 걸린다.
+  // 공정: 폭탄 숫자를 처음에 정한다. 몰래: 폭탄 숫자를 정해 두지 않는다. 다른 사람이 부르면 언제나 "아님"이고
+  // 남은 범위가 넓은 쪽으로 업/다운을 준다. 대상은 두 번째 차례에, 또는 범위가 좁아져서 다음 바퀴 전에
+  // 다른 사람이 몰릴 수 있으면 그 차례에 바로, 부른 숫자가 폭탄이 된다.
+  function updown(view, again) {
+    const N = names(), n = N.length;
+    let lo = 1, hi = 100, turn = randInt(0, n - 1), entry = '', over = false, tTurns = 0;
+    // 몰래 설정이 이미 켜져 있으면 대상이 2~3번째 차례가 되도록 시작 사람을 고른다 — 사람이 많을 때
+    // 다들 정확히 가운데만 부르면 대상 차례 전에 범위가 다 줄어들 수 있어서.
+    { const t0 = currentTarget(); if (t0 != null && n > 2) turn = (t0 - randInt(1, 2) + n) % n; }
+    let bomb = randInt(1, 100);
+    const boomOnTurn = Math.random() < 0.5 ? 1 : 2;
+    const range = h('div', { class: 'range' });
+    const disp = h('div', { class: 'entry' });
+    const msg = h('p', { class: 'msg' });
+    const hint = h('p', { class: 'sub' }, '숫자를 부르면 업/다운을 알려줘요');
+    const keys = h('div', { class: 'keys' });
+    const foot = h('div');
+    function render() {
+      range.innerHTML = '';
+      range.append(h('span', null, String(lo)), h('i', null, '~'), h('span', null, String(hi)));
+      disp.textContent = entry || '?';
+      if (!over) msg.textContent = `${N[turn]} 차례`;
+    }
+    function submit() {
+      if (over || !entry) return;
+      const g = +entry;
+      entry = '';
+      if (!(g >= lo && g <= hi)) { hint.textContent = `${lo}~${hi} 사이 숫자를 불러요`; render(); return; }
+      const t = currentTarget();
+      const size = hi - lo + 1;
+      let boom, goUp;
+      if (t == null) {
+        if (bomb < lo || bomb > hi) bomb = randInt(lo, hi);   // 몰래 설정을 켰다 끈 경우 범위 안으로 다시 정함
+        boom = g === bomb;
+        goUp = g < bomb;
+      } else {
+        if (turn === t) { tTurns++; boom = tTurns >= boomOnTurn || size <= 3 * Math.pow(2, n - 1); }
+        else boom = size <= 1;                                // 이론상 거의 안 생기는 마지막 안전장치
+        if (!boom) {
+          if (g === lo) goUp = true;
+          else if (g === hi) goUp = false;
+          else goUp = hi - g > g - lo ? true : hi - g < g - lo ? false : Math.random() < 0.5;
+        }
+      }
+      if (boom) {
+        over = true;
+        finishRig(t != null && turn === t);
+        range.classList.add('boom');
+        range.innerHTML = '';
+        range.append(h('span', null, String(g)));
+        if (navigator.vibrate) try { navigator.vibrate([200, 80, 300]); } catch (e) {}
+        msg.textContent = `${N[turn]} 걸림`; msg.classList.add('bad');
+        hint.textContent = `폭탄 숫자는 ${g}`;
+        keys.hidden = true; disp.hidden = true;
+        foot.append(againButton(again));
+        return;
+      }
+      if (goUp) lo = g + 1; else hi = g - 1;
+      hint.textContent = `${N[turn]}: ${g} → ${goUp ? '업' : '다운'}`;
+      turn = (turn + 1) % n;
+      render();
+    }
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '지움', '0', '확인'].forEach((k) => {
+      const b = h('button', { type: 'button', class: k === '확인' ? 'ok' : '' }, k);
+      b.onclick = () => {
+        if (over) return;
+        if (k === '확인') return submit();
+        if (k === '지움') entry = entry.slice(0, -1);
+        else if (entry.length < 3) entry = (entry + k).replace(/^0+/, '');
+        render();
+      };
+      keys.append(b);
+    });
+    render();
+    view.append(range, msg, hint, disp, keys, foot);
+  }
+
+  // ---------- 7. 손가락 룰렛 ----------
+  // 모두 화면에 손가락을 올리고 2.5초 동안 그대로 있으면 한 명이 뽑힌다. 화면만으로는 누구 손가락인지
+  // 알 수 없어서 몰래 설정은 쓰지 않는다 — 진짜 무작위.
+  function finger(view, again) {
+    const pad = h('div', { class: 'pad' });
+    const hintEl = h('p', { class: 'padhint' }, '모두 손가락을 화면에 올려요');
+    pad.append(hintEl);
+    const msg = h('p', { class: 'msg' });
+    const foot = h('div');
+    const dots = new Map();
+    let timer = null, done = false, colorIdx = 0;
+    const PAL = ['#ff6b4a', '#ffcf3d', '#4dbbff', '#63d47a', '#c58cff', '#ff8fb8', '#ff9f43', '#3dd6c6', '#e4572e', '#7b8cff'];
+    function arm() {
+      clearTimeout(timer);
+      if (done) return;
+      if (dots.size >= 2) { hintEl.textContent = '그대로 있어요…'; timer = setTimeout(pick, 2500); }
+      else hintEl.textContent = dots.size ? '한 명 더 올려요' : '모두 손가락을 화면에 올려요';
+    }
+    function place(dot, e) {
+      const r = pad.getBoundingClientRect();
+      dot.style.left = `${e.clientX - r.left}px`;
+      dot.style.top = `${e.clientY - r.top}px`;
+    }
+    pad.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (done) return;
+      const dot = h('div', { class: 'fdot', style: `background:${PAL[colorIdx++ % PAL.length]}` });
+      place(dot, e);
+      pad.append(dot);
+      dots.set(e.pointerId, dot);
+      arm();
+    });
+    pad.addEventListener('pointermove', (e) => { const d = dots.get(e.pointerId); if (d && !done) place(d, e); });
+    const lift = (e) => {
+      const d = dots.get(e.pointerId);
+      if (!d || done) return;
+      d.remove(); dots.delete(e.pointerId); arm();
+    };
+    pad.addEventListener('pointerup', lift);
+    pad.addEventListener('pointercancel', lift);
+    pad.addEventListener('contextmenu', (e) => e.preventDefault());
+    function pick() {
+      if (dots.size < 2) return arm();
+      done = true;
+      const all = [...dots.values()];
+      const win = all[randInt(0, all.length - 1)];
+      all.forEach((d) => d.classList.add(d === win ? 'win' : 'lose'));
+      hintEl.textContent = '';
+      if (navigator.vibrate) try { navigator.vibrate(200); } catch (e) {}
+      msg.textContent = '이 손가락이 걸림'; msg.classList.add('bad');
+      foot.append(againButton(again));
+    }
+    view.append(msg, pad, foot);
+    return () => clearTimeout(timer);
+  }
+
+  // ---------- 8. 악어 이빨 ----------
+  // 돌아가며 이빨을 누르다가 무는 이빨을 누른 사람이 걸린다.
+  // 공정: 누를 때마다 1/남은 이빨 수 확률. 몰래: 대상이 1번째(50%) 또는 2번째로 누를 때 문다.
+  function croc(view, again) {
+    const N = names(), n = N.length;
+    const teeth = Math.max(10, 2 * n + 4);
+    const popOn = Math.random() < 0.5 ? 1 : 2;
+    let turn = randInt(0, n - 1), pressed = 0, tPress = 0, over = false;
+    const msg = h('p', { class: 'msg' }, `${N[turn]} 차례`);
+    const head = h('div', { class: 'croc' }, h('div', { class: 'top' }, h('i', { class: 'eye' }), h('i', { class: 'eye r' })));
+    const jaw = h('div', { class: 'bottom' });
+    head.append(jaw);
+    const foot = h('div');
+    for (let i = 0; i < teeth; i++) {
+      const b = h('button', { class: 'tooth', type: 'button', 'aria-label': `${i + 1}번 이빨` });
+      b.onclick = () => {
+        if (over || b.classList.contains('down')) return;
+        b.classList.add('down');
+        const t = currentTarget();
+        let bite;
+        if (t == null) bite = Math.random() < 1 / (teeth - pressed);
+        else if (turn === t) { tPress++; bite = tPress >= popOn; }
+        else bite = false;
+        pressed++;
+        if (bite) {
+          over = true;
+          finishRig(t != null);
+          head.classList.add('bite');
+          if (navigator.vibrate) try { navigator.vibrate(300); } catch (e) {}
+          msg.textContent = `${N[turn]} 걸림`; msg.classList.add('bad');
+          foot.append(againButton(again));
+        } else {
+          turn = (turn + 1) % n; msg.textContent = `${N[turn]} 차례`;
+        }
+      };
+      jaw.append(b);
+    }
+    view.append(h('p', { class: 'sub' }, '돌아가며 이빨을 하나씩 눌러요. 물리면 걸려요'), head, msg, foot);
+  }
+
+  // ---------- 9. 고무줄 수박 ----------
+  // 돌아가며 고무줄을 하나씩 감는다. 수박이 터질 때 감은 사람이 걸린다.
+  // 공정: n+2~3n+6번째 고무줄 사이 어딘가에서 터진다. 몰래: n+1~2n+1개가 감긴 뒤부터 대상 차례에만,
+  // 그 구간에서 대상의 1번째(50%) 또는 2번째 차례에 터진다. 금 가는 모습은 두 경우 똑같이 감은 개수로만 정해진다.
+  function melon(view, again) {
+    const N = names(), n = N.length;
+    const visMax = 3 * n + 6;
+    const fairAt = randInt(n + 2, visMax);
+    const minB = randInt(n + 1, 2 * n + 1);
+    const popOn = Math.random() < 0.5 ? 1 : 2;
+    let turn = randInt(0, n - 1), bands = 0, tTurns = 0, over = false;
+    const BAND_COLORS = ['#ff4a2e', '#ffcf3d', '#4dbbff', '#c58cff', '#ff8fb8', '#ff9f43'];
+    const box = h('div', { class: 'melon', html: `
+      <svg viewBox="-115 -115 230 230" aria-hidden="true">
+        <defs><clipPath id="melclip"><circle r="100"/></clipPath></defs>
+        <g class="whole">
+          <circle r="100" fill="#3aa04a"/>
+          <g clip-path="url(#melclip)" stroke="#1f6b2c" stroke-width="11" fill="none">
+            <path d="M-84 -100 Q-110 0 -84 100"/><path d="M-50 -100 Q-66 0 -50 100"/><path d="M-16 -100 Q-22 0 -16 100"/>
+            <path d="M16 -100 Q22 0 16 100"/><path d="M50 -100 Q66 0 50 100"/><path d="M84 -100 Q110 0 84 100"/>
+          </g>
+          <g class="bands"></g>
+          <g class="cracks" stroke="#1d1d1d" stroke-width="3.5" fill="none" stroke-linejoin="round">
+            <path d="M-20 -96 L-8 -70 L-26 -50 L-6 -28" opacity="0"/>
+            <path d="M60 -78 L48 -56 L66 -36 L50 -14" opacity="0"/>
+            <path d="M-70 40 L-50 52 L-62 74 L-40 88" opacity="0"/>
+          </g>
+          <circle r="100" fill="none" stroke="#1d1d1d" stroke-width="5"/>
+        </g>
+        <g class="flesh" opacity="0">
+          <circle r="104" fill="#ff4d5e" stroke="#1d1d1d" stroke-width="5"/>
+          <ellipse cx="-40" cy="-30" rx="5" ry="9" fill="#1d1d1d"/><ellipse cx="30" cy="-45" rx="5" ry="9" fill="#1d1d1d"/>
+          <ellipse cx="0" cy="10" rx="5" ry="9" fill="#1d1d1d"/><ellipse cx="45" cy="30" rx="5" ry="9" fill="#1d1d1d"/>
+          <ellipse cx="-50" cy="40" rx="5" ry="9" fill="#1d1d1d"/><ellipse cx="-10" cy="60" rx="5" ry="9" fill="#1d1d1d"/>
+        </g>
+      </svg>` });
+    const count = h('p', { class: 'bandcount' }, '고무줄 0개');
+    const msg = h('p', { class: 'msg' }, `${N[turn]} 차례`);
+    const btn = h('button', { class: 'btn primary', type: 'button' }, '고무줄 감기');
+    const svgNS = 'http://www.w3.org/2000/svg';
+    function wrap() {
+      if (over) return;
+      bands++;
+      const e = document.createElementNS(svgNS, 'ellipse');
+      e.setAttribute('cx', '0'); e.setAttribute('cy', String(rand(-16, 16)));
+      e.setAttribute('rx', '102'); e.setAttribute('ry', String(rand(8, 22)));
+      e.setAttribute('transform', `rotate(${rand(-14, 14)})`);
+      e.setAttribute('fill', 'none'); e.setAttribute('stroke', BAND_COLORS[bands % BAND_COLORS.length]); e.setAttribute('stroke-width', '4');
+      box.querySelector('.bands').append(e);
+      const ratio = bands / visMax;
+      [0.45, 0.65, 0.85].forEach((th, k) => { if (ratio >= th) box.querySelectorAll('.cracks path')[k].setAttribute('opacity', '1'); });
+      const sq = `scale(${(1 + 0.007 * bands).toFixed(3)}, ${(1 - 0.012 * bands).toFixed(3)})`;
+      box.style.setProperty('--sq', sq);
+      box.style.transform = sq;
+      box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+      count.textContent = `고무줄 ${bands}개`;
+      const t = currentTarget();
+      let burst;
+      if (t == null) burst = bands >= fairAt;
+      else if (turn === t && bands >= minB) { tTurns++; burst = tTurns >= popOn; }
+      else burst = false;
+      if (burst) {
+        over = true;
+        finishRig(t != null);
+        box.querySelector('.whole').setAttribute('opacity', '0');
+        box.querySelector('.flesh').setAttribute('opacity', '1');
+        box.classList.add('burst');
+        if (navigator.vibrate) try { navigator.vibrate([150, 60, 250]); } catch (e2) {}
+        msg.textContent = `${N[turn]} 걸림`; msg.classList.add('bad');
+        setAgain(btn, again);
+        return;
+      }
+      turn = (turn + 1) % n;
+      msg.textContent = `${N[turn]} 차례`;
+    }
+    btn.onclick = wrap;
+    view.append(h('div', { class: 'melon-wrap' }, box), count, msg, btn);
+  }
+
+  // ---------- 10. 경마 ----------
+  // 각자 말 한 마리. 꼴찌로 들어온 말 주인이 걸린다. 말마다 구간별 속도가 다른 "달리기 기록"을 만들어
+  // 그대로 재생한다. 공정: 기록을 무작위로 나눠 준다. 몰래: 가장 느린 기록을 대상 말에게 준다 —
+  // 구간 속도가 들쭉날쭉해서 중간에는 대상 말이 앞서기도 한다.
+  function race(view, again) {
+    const N = names(), n = N.length;
+    const SEGS = 8;
+    const track = h('div', { class: 'track' });
+    const lanes = N.map((name, i) => {
+      const horse = h('div', { class: 'horse' }, h('i', { class: 'tag', style: `background:${['#ff6b4a', '#ffcf3d', '#4dbbff', '#63d47a', '#c58cff', '#ff8fb8', '#ff9f43', '#3dd6c6'][i % 8]}` }, name.slice(0, 2)), h('span', null, '🐎'));
+      const place = h('b', { class: 'place' });
+      const lane = h('div', { class: 'lane2' }, h('em', { class: 'lname' }, name), horse, place);
+      track.append(lane);
+      return { lane, horse, place };
+    });
+    const msg = h('p', { class: 'msg' });
+    const btn = h('button', { class: 'btn primary', type: 'button' }, '출발');
+    let raf = null;
+    function profile() {
+      const speeds = Array.from({ length: SEGS }, () => rand(0.7, 1.3));
+      const times = speeds.map((v) => 1 / SEGS / v);
+      return { speeds, times, total: times.reduce((a, b) => a + b, 0) };
+    }
+    function posAt(p, e) {              // e: 0~ (1 = 평균 완주 시간)
+      let acc = 0;
+      for (let k = 0; k < SEGS; k++) {
+        if (e <= acc + p.times[k]) return (k + (e - acc) / p.times[k]) / SEGS;
+        acc += p.times[k];
+      }
+      return 1;
+    }
+    btn.onclick = () => {
+      btn.disabled = true; msg.textContent = '';
+      const t = currentTarget();
+      const profs = Array.from({ length: n }, profile).sort((a, b) => a.total - b.total);
+      let assign;
+      if (t != null) {
+        const slow = profs.pop();
+        const rest = shuffle(profs);
+        assign = N.map((_, i) => (i === t ? slow : rest.pop()));
+      } else assign = shuffle(profs);
+      const order = assign.map((p, i) => i).sort((a, b) => assign[a].total - assign[b].total);
+      const loser = order[order.length - 1];
+      const DUR = rand(9, 12);              // 평균 완주까지 걸리는 초
+      const slowest = assign[loser].total;
+      const t0 = performance.now();
+      let shown = 0;
+      const step = (now) => {
+        const e = ((now - t0) / 1000) / DUR;
+        lanes.forEach((L, i) => {
+          const p = Math.min(1, posAt(assign[i], e));
+          const w = L.lane.clientWidth - 78;
+          L.horse.style.transform = `translate(${(p * w).toFixed(1)}px, -50%)`;
+        });
+        while (shown < n && e >= assign[order[shown]].total) {
+          lanes[order[shown]].place.textContent = `${shown + 1}등`;
+          shown++;
+        }
+        if (e < slowest) { raf = requestAnimationFrame(step); return; }
+        finishRig(t != null && t === loser);
+        lanes[loser].lane.classList.add('last');
+        if (navigator.vibrate) try { navigator.vibrate(200); } catch (e2) {}
+        msg.textContent = `${N[loser]} 꼴찌`; msg.classList.add('bad');
+        setAgain(btn, again);
+      };
+      raf = requestAnimationFrame(step);
+    };
+    view.append(h('p', { class: 'sub' }, '꼴찌로 들어온 말 주인이 걸려요'), track, msg, btn);
+    return () => cancelAnimationFrame(raf);
+  }
+
   const GAMES = [
     { id: 'lots', name: '제비뽑기', desc: '한 장씩 뒤집어서 당첨 찾기', play: lots },
     { id: 'bomb', name: '폭탄 돌리기', desc: '언제 터질지 모르는 폭탄 넘기기', play: bomb },
     { id: 'pirate', name: '해적 룰렛', desc: '칼 꽂다가 해적이 튀어나오면 걸림', play: pirate },
     { id: 'dice', name: '주사위 꼴찌', desc: '두 개 합이 제일 낮으면 걸림', play: dice },
     { id: 'bottle', name: '병 돌리기', desc: '병이 가리키는 사람이 걸림', play: bottle },
+    { id: 'updown', name: '업다운 숫자 폭탄', desc: '1~100 폭탄 숫자를 부르면 걸림', play: updown },
+    { id: 'finger', name: '손가락 룰렛', desc: '다 같이 손가락 올리면 하나가 뽑힘', play: finger },
+    { id: 'croc', name: '악어 이빨', desc: '이빨 누르다 물리면 걸림', play: croc },
+    { id: 'melon', name: '고무줄 수박', desc: '고무줄 감다 수박 터지면 걸림', play: melon },
+    { id: 'race', name: '경마', desc: '꼴찌로 들어온 말 주인이 걸림', play: race },
     { id: 'ladder', name: '사다리 타기', desc: '이름과 결과를 적고 사다리 타기', href: 'ladder.html' },
     { id: 'pinball', name: '핀볼 배틀로얄', desc: '공이 마지막까지 남으면 걸림', href: 'pinball.html' },
     { id: 'roulette', name: '운명의 룰렛', desc: '돌림판이 멈춘 칸이 걸림', href: 'roulette.html' },

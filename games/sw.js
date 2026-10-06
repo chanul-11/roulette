@@ -1,6 +1,6 @@
 // 처음 열 때 게임 파일을 전부 저장해 두고, 다음부터는 인터넷 없이도 열리게 한다.
 // 인터넷이 되면 새 버전을 받아 저장하고, 안 되면 저장해 둔 걸 쓴다(룰렛 앱과 같은 방식).
-const CACHE = 'party-games-v2';
+const CACHE = 'party-games-v3';
 const SHELL = ['./', 'index.html', 'ladder.html', 'pinball.html', 'roulette.html',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 

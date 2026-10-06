@@ -291,16 +291,25 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
   }
 
   // ---------- 2. 폭탄 돌리기 ----------
-  // 공정: 10~30초 사이 아무 때나 터진다. 몰래: 최소 8~15초가 지난 뒤, 대상이 들고 있을 때만
-  // 0.5~2.2초 들고 있으면 터진다(바로 넘기면 다음 차례로 미뤄짐).
+  // 공정: 10~30초 사이 아무 때나 터진다. 몰래: 최소 8~15초가 지난 뒤 대상이 들고 있을 때만 터진다.
+  // 처음엔 0.5~2.2초 들고 있으면 터지고, 한 번 빨리 넘겨 빠져나가면 다음엔 0.25~0.7초,
+  // 두 번 빠져나가면 그다음엔 넘기기를 누르는 순간 터진다 — 늦어도 대상의 세 번째 차례엔 반드시 걸린다.
   function bomb(view, again) {
     const N = names(), n = N.length, target = takeTarget();
-    let holder = randInt(0, n - 1), start = 0, timer = null, armAt = null;
+    let holder = randInt(0, n - 1), start = 0, timer = null, armAt = null, escapes = 0;
     const fuse = rand(10000, 30000), minT = rand(8000, 15000);
     const ball = h('div', { class: 'bomb idle' });
     const who = h('p', { class: 'holder' }, N[holder]);
     const msg = h('p', { class: 'sub' }, '폰을 들고 있는 사람');
     const btn = h('button', { class: 'btn primary', type: 'button' }, '시작');
+    function explode() {
+      clearInterval(timer); timer = null;
+      ball.classList.add('boom');
+      if (navigator.vibrate) try { navigator.vibrate([200, 80, 300]); } catch (e) {}
+      who.textContent = `${N[holder]} 걸림`; who.style.color = 'var(--bad)';
+      msg.textContent = '펑!';
+      btn.textContent = '다시 하기'; btn.onclick = again;
+    }
     function tick() {
       const t = Date.now() - start;
       const left = target == null ? Math.max(0.2, 1 - t / fuse) : Math.max(0.25, 1 - t / (minT + 12000));
@@ -308,17 +317,10 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
       let boom = false;
       if (target == null) boom = t >= fuse;
       else if (t >= minT && holder === target) {
-        if (armAt == null) armAt = Date.now() + rand(500, 2200);
+        if (armAt == null) armAt = Date.now() + (escapes === 0 ? rand(500, 2200) : rand(250, 700));
         boom = Date.now() >= armAt;
       }
-      if (boom) {
-        clearInterval(timer); timer = null;
-        ball.classList.add('boom');
-        if (navigator.vibrate) try { navigator.vibrate([200, 80, 300]); } catch (e) {}
-        who.textContent = `${N[holder]} 걸림`; who.style.color = 'var(--bad)';
-        msg.textContent = '펑!';
-        btn.textContent = '다시 하기'; btn.onclick = again;
-      }
+      if (boom) explode();
     }
     btn.onclick = () => {
       if (!timer && !start) {
@@ -329,6 +331,10 @@ h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: 0 0 8px;
         return;
       }
       if (!timer) return;
+      if (target != null && holder === target && Date.now() - start >= minT) {
+        if (escapes >= 2) { explode(); return; }   // 넘기려는 순간 터짐
+        escapes++;
+      }
       holder = (holder + 1) % n; armAt = null;
       who.textContent = N[holder];
     };
